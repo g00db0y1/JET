@@ -1,0 +1,20 @@
+name: jet_cli
+description: >-
+  Global CLI tool for JET. Provides `jet init`, `jet build`, `jet lint`,
+  `jet serve`, and `jet clean` commands.
+  Install with: dart pub global activate jet_cli
+version: 0.1.0-dev
+publish_to: none
+
+environment:
+  sdk: ^3.6.0
+resolution: workspace
+
+dependencies:
+  args: ^2.5.0
+  path: ^1.9.0
+  process_run: ^1.2.0
+  jet_builder: any
+
+executables:
+  jet: jet

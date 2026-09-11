@@ -1,0 +1,17 @@
+name: jet_builder_test
+description: Unit and integration tests for the jet_builder transpiler engine.
+publish_to: none
+
+environment:
+  sdk: ^3.6.0
+resolution: workspace
+
+dependencies:
+  jet_builder:
+    path: ../../packages/jet_builder
+  jet_annotations:
+    path: ../../packages/jet_annotations
+
+dev_dependencies:
+  build_test: ^2.2.0
+  test: ">=1.24.0 <1.31.1"

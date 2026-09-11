@@ -1,0 +1,26 @@
+name: jet_builder
+description: >-
+  build_runner plugin that transpiles Flutter widgets to Jaspr SSR components.
+  Add to dev_dependencies and run `dart run build_runner build`.
+version: 0.1.0-dev
+publish_to: none
+
+environment:
+  sdk: ^3.6.0
+resolution: workspace
+
+dependencies:
+  analyzer: ^7.0.0
+  build: ^2.4.0
+  source_gen: ^2.0.0
+  code_builder: ^4.10.0
+  dart_style: ^3.0.0
+  path: ^1.9.0
+  collection: ^1.18.0
+  jet_annotations:
+    path: ../jet_annotations
+
+dev_dependencies:
+  build_test: ^2.2.0
+  # Use test version compatible with analyzer ^7.0.0 (pre-8.0 era)
+  test: ">=1.24.0 <1.31.1"

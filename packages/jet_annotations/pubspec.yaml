@@ -1,0 +1,15 @@
+name: jet_annotations
+description: >-
+  Semantic HTML hint annotations for the JET Flutter-to-Jaspr transpiler.
+  Provides the .asWeb() extension and @JetRoute annotation.
+  Zero runtime overhead on mobile — all hints are consumed at build time.
+version: 0.1.0-dev
+publish_to: none
+
+environment:
+  sdk: ^3.6.0
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter

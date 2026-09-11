@@ -1,0 +1,9 @@
+name: jet_workspace
+publish_to: none
+environment:
+  sdk: ^3.6.0
+workspace:
+  - packages/jet_annotations
+  - packages/jet_builder
+  - packages/jet_cli
+  - tests/jet_builder_test

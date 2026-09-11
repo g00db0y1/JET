@@ -1,0 +1,12 @@
+builders:
+  jet_builder:
+    import: "package:jet_builder/builder.dart"
+    builder_factories: ["jetBuilder"]
+    build_extensions: {".dart": [".jaspr.dart"]}
+    auto_apply: dependents
+    build_to: source
+    defaults:
+      generate_for:
+        - lib/ui/**
+        - lib/widgets/**
+        - lib/screens/**
