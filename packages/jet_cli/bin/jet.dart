@@ -5,6 +5,9 @@ import 'package:path/path.dart' as p;
 import 'package:process_run/process_run.dart';
 
 import 'package:jet_cli/src/preview_command.dart';
+import 'package:jet_builder/src/parser/flutter_ast_parser.dart';
+import 'package:jet_builder/src/visitor/style_accumulator_visitor.dart';
+import 'package:jet_builder/src/emitter/jaspr_emitter.dart';
 
 /// JET CLI — Developer convenience tool for the JET transpiler.
 ///
@@ -121,16 +124,60 @@ Then run: jet build
 }
 
 Future<void> _runBuildAll() async {
-  print('[JET] Running dart run build_runner build...');
-  final result = await run(
-    'dart run build_runner build --delete-conflicting-outputs',
-    verbose: true,
-  );
-  if (result.first.exitCode != 0) {
-    print('[JET] ❌ Build failed.');
-    exit(result.first.exitCode);
+  print('[JET] 🚀 Starting lightning-fast AST build...');
+  final stopwatch = Stopwatch()..start();
+
+  final sourceDirs = ['lib/ui', 'lib/screens', 'lib/widgets'];
+  final cacheDir = Directory('.jet_cache');
+  if (!cacheDir.existsSync()) {
+    cacheDir.createSync(recursive: true);
   }
-  print('[JET] ✅ Build complete.');
+
+  int fileCount = 0;
+  int componentCount = 0;
+
+  for (final dirPath in sourceDirs) {
+    final dir = Directory(dirPath);
+    if (!dir.existsSync()) continue;
+
+    for (final entity in dir.listSync(recursive: true)) {
+      if (entity is File && entity.path.endsWith('.dart') && !entity.path.endsWith('.jaspr.dart')) {
+        final source = entity.readAsStringSync();
+        final parser = FlutterAstParser();
+        final parseResult = parser.parse(source: source, path: entity.path);
+
+        if (!parseResult.isUsable) continue;
+
+        final visitor = StyleAccumulatorVisitor();
+        parseResult.unit!.accept(visitor);
+
+        if (visitor.components.isEmpty) continue;
+
+        final emitter = JasprEmitter();
+        final jasprCode = emitter.emitFile(
+          components: visitor.components,
+          sourceFile: entity.path,
+          version: '0.1.0-dev',
+        );
+
+        // Write to cache using original basename
+        final basename = p.basename(entity.path);
+        final cacheFile = File(p.join(cacheDir.path, basename));
+        cacheFile.writeAsStringSync(jasprCode);
+
+        fileCount++;
+        componentCount += visitor.components.length;
+      }
+    }
+  }
+
+  stopwatch.stop();
+  if (fileCount == 0) {
+    print('[JET] ⚠️ No Flutter UI files found in lib/ui, lib/screens, or lib/widgets.');
+  } else {
+    print('[JET] ✅ Build complete in ${stopwatch.elapsedMilliseconds}ms.');
+    print('[JET] 📂 Transpiled $componentCount components across $fileCount files to .jet_cache/');
+  }
 }
 
 Future<void> _runBuildSingle(String filePath) async {

@@ -58,10 +58,11 @@ Decisions are logged in the format: `[UD|AD]-NNN | Status | Title`
 
 ---
 
-## AD-002 | USED | `build_to: source` for Generated Files
+## AD-002 | SUPERSEDED | `build_to: source` for Generated Files
 **Date**: 2026-09-11  
 **Decision**: `build.yaml` uses `build_to: source` so `.jaspr.dart` files appear alongside Flutter source in the user's `lib/` directory.  
 **Rationale**: This allows developers to inspect, version-control (or gitignore), and directly import the generated Jaspr files into their web project without additional config.
+**Superseded By**: UD-007. This caused workspace pollution and was dropped in favor of a `.jet_cache` staging architecture.
 
 ---
 
@@ -83,3 +84,10 @@ Decisions are logged in the format: `[UD|AD]-NNN | Status | Title`
 **Date**: 2026-09-11  
 **Decision**: Linter violations are printed as structured JSON to stderr but do NOT halt the build or throw exceptions.  
 **Rationale**: Allows partial adoption — teams can see what needs fixing without blocking their CI pipeline. Fatal errors reserved for actual parse failures.
+
+---
+
+## UD-007 | USED | Dual-Pipeline Transpilation (`jet CLI` vs `build_runner`)
+**Date**: 2026-09-11  
+**Decision**: JET will retain the standard Dart `build_runner` package for ecosystem compatibility, but the primary workflow for in-house testing and speed will be the custom `jet build` CLI which outputs directly to a `.jet_cache` staging directory.  
+**Rationale**: Standard `build_runner` can be slow and relies heavily on workspace caching. The custom AST crawler built into `jet_cli` processes entire codebases in milliseconds. We will maintain both and ensure the `build_runner` builder implementation is brought up to parity before public release, allowing users to choose their preferred workflow.
