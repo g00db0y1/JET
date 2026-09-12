@@ -75,3 +75,14 @@ JET relies on "Golden Tests" (snapshot tests). The `tests/corpus/` directory con
 ```bash
 dart test tests/jet_builder_test/test/golden_test.dart
 ```
+
+---
+
+## 🗺️ Roadmap to v1.0.0 (The Render Expansion)
+Currently, JET flawlessly handles ~80% of standard UI layouts (Columns, Rows, Containers, styling). To handle the final 20% of edge-case enterprise Flutter apps, the following features are in active development:
+
+- 🛡️ **`@JetFallback` Safety Valve**: For custom canvas drawings or shaders, this annotation will let you bypass the transpiler and inject a manual Jaspr component.
+- 🏎️ **Physics Engine Translation**: Mapping Flutter's `BouncingScrollPhysics` and `PageScrollPhysics` to CSS `overscroll-behavior` and `scroll-snap`.
+- 🎬 **Animations to CSS**: Translating `AnimatedContainer` and `AnimationController` to the Web Animations API / CSS Transitions.
+- 📜 **Slivers**: Converting `CustomScrollView` and `SliverAppBar` into advanced CSS Grid behaviors.
+- 📝 **Semantic Forms**: Deep mapping of `TextFormField` and `FormState` to accessible HTML5 `<form>` validation.
