@@ -19,21 +19,50 @@ import 'package:analyzer/dart/ast/visitor.dart';
 class PoisonSniffer {
   const PoisonSniffer();
 
-  /// Platform-specific packages that should not appear in shared logic files.
-  static const _platformPlugins = {
-    'shared_preferences',
-    'path_provider',
-    'camera',
-    'image_picker',
-    'geolocator',
-    'permission_handler',
-    'local_auth',
-    'flutter_secure_storage',
-    'android_alarm_manager_plus',
-    'device_info_plus',
-    'battery_plus',
-    'connectivity_plus',
-    'sensors_plus',
+  /// Platform-specific packages mapping to their web equivalents or JS interop templates.
+  static const platformPlugins = <String, WebEquivalent>{
+    'shared_preferences': WebEquivalent(
+      isPureDart: true,
+      suggestion: 'Use dart:html window.localStorage or package:web for local web storage.',
+    ),
+    'sqflite': WebEquivalent(
+      isPureDart: true,
+      suggestion: 'Web browsers do not support SQLite natively. Use IndexedDB or migrate to a cross-platform DB like package:drift.',
+    ),
+    'path_provider': WebEquivalent(
+      isPureDart: true,
+      suggestion: 'Web apps lack local filesystems. Use IndexedDB for blobs, or upload to a server.',
+    ),
+    'url_launcher': WebEquivalent(
+      isPureDart: true,
+      suggestion: "Use dart:html window.open(url, '_blank') to launch URLs on the web.",
+    ),
+    'connectivity_plus': WebEquivalent(
+      isPureDart: true,
+      suggestion: 'Use window.navigator.onLine to check network status in Jaspr.',
+    ),
+    'stripe_payment': WebEquivalent(
+      isPureDart: false,
+      suggestion: 'Stripe requires the official Stripe.js web SDK. You must use JavaScript Interop.',
+      jsInteropTemplate: '''
+// 1. Add <script src="https://js.stripe.com/v3/"></script> to web/index.html
+// 2. Create an interop file (e.g. lib/ports/stripe_interop.dart):
+@JS()
+library stripe_interop;
+import 'dart:js_interop';
+
+@JS('Stripe')
+external StripeJs get stripe;
+
+extension type StripeJs._(JSObject _) implements JSObject {
+  external JSPromise redirectToCheckout(JSObject options);
+}
+''',
+    ),
+    'firebase_core': WebEquivalent(
+      isPureDart: false,
+      suggestion: 'Use the official Firebase JS SDK via dart:js_interop for Jaspr web builds.',
+    ),
   };
 
   /// Analyzes a [CompilationUnit] for architectural violations.
@@ -121,17 +150,24 @@ class _PoisonVisitor extends RecursiveAstVisitor<void> {
 
     // P-003: Platform plugins in logic files
     if (_isLogicFile) {
-      for (final plugin in PoisonSniffer._platformPlugins) {
+      for (final entry in PoisonSniffer.platformPlugins.entries) {
+        final plugin = entry.key;
+        final equivalent = entry.value;
         if (importUri.contains(plugin)) {
+          var fullSuggestion = 'Create an abstract interface in lib/ports/ and move $plugin usage to a mobile adapter.\n\n'
+              '🌐 Web Equivalent:\n${equivalent.suggestion}';
+              
+          if (equivalent.jsInteropTemplate != null) {
+            fullSuggestion += '\n\n💡 JS Interop Template:\n${equivalent.jsInteropTemplate}';
+          }
+          
           violations.add(LinterViolation(
             rule: 'P-003',
             severity: 'error',
             file: filePath,
             line: _getLine(node),
             message: 'Platform plugin "$plugin" imported in shared logic file.',
-            suggestion:
-                'Create an abstract interface (e.g., abstract class Storage) in lib/ports/ '
-                'and move $plugin usage to a platform-specific adapter in apps/mobile/lib/adapters/.',
+            suggestion: fullSuggestion,
           ));
         }
       }
@@ -270,4 +306,17 @@ class LinterViolation {
         'message': message,
         if (suggestion != null) 'suggestion': suggestion,
       };
+}
+
+/// Represents web compatibility guidance for a platform-specific package.
+class WebEquivalent {
+  const WebEquivalent({
+    required this.isPureDart,
+    required this.suggestion,
+    this.jsInteropTemplate,
+  });
+
+  final bool isPureDart;
+  final String suggestion;
+  final String? jsInteropTemplate;
 }

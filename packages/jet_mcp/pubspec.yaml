@@ -1,0 +1,15 @@
+name: jet_mcp
+description: Model Context Protocol (MCP) server for JET. Equips AI agents with transpilation, linting, and documentation tools.
+version: 0.1.0-dev
+publish_to: none
+
+environment:
+  sdk: ^3.6.0
+resolution: workspace
+
+dependencies:
+  jet_builder: any
+  # Using standard dart:convert and dart:io for JSON-RPC over stdio
+
+executables:
+  jet_mcp: jet_mcp

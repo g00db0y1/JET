@@ -6,4 +6,5 @@ workspace:
   - packages/jet_annotations
   - packages/jet_builder
   - packages/jet_cli
+  - packages/jet_mcp
   - tests/jet_builder_test

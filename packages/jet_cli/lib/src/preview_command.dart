@@ -91,8 +91,8 @@ Future<void> runPreview(String filePath, {int? lineNumber}) async {
       cacheDir.createSync(recursive: true);
     }
     final basename = p.basename(filePath);
-    // Keep standard .dart extension as agreed!
-    final newName = 'preview@$basename';
+    // Label it as .jaspr.dart in the cache so JET knows its target environment!
+    final newName = 'preview@${basename.replaceFirst('.dart', '.jaspr.dart')}';
     final cacheFile = File(p.join(cacheDir.path, newName));
     cacheFile.writeAsStringSync(jasprCode);
     print('\n[JET] 📂 Saved full preview to ${cacheFile.path}');

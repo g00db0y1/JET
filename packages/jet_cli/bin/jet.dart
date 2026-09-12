@@ -160,9 +160,10 @@ Future<void> _runBuildAll() async {
           version: '0.1.0-dev',
         );
 
-        // Write to cache using original basename
+        // Write to cache using target label (.jaspr.dart)
         final basename = p.basename(entity.path);
-        final cacheFile = File(p.join(cacheDir.path, basename));
+        final targetName = basename.replaceFirst('.dart', '.jaspr.dart');
+        final cacheFile = File(p.join(cacheDir.path, targetName));
         cacheFile.writeAsStringSync(jasprCode);
 
         fileCount++;
@@ -174,10 +175,56 @@ Future<void> _runBuildAll() async {
   stopwatch.stop();
   if (fileCount == 0) {
     print('[JET] ⚠️ No Flutter UI files found in lib/ui, lib/screens, or lib/widgets.');
-  } else {
-    print('[JET] ✅ Build complete in ${stopwatch.elapsedMilliseconds}ms.');
-    print('[JET] 📂 Transpiled $componentCount components across $fileCount files to .jet_cache/');
+    return;
+  } 
+
+  print('[JET] ✅ Cache build complete in ${stopwatch.elapsedMilliseconds}ms.');
+  print('[JET] 📂 Transpiled $componentCount components across $fileCount files to .jet_cache/');
+  
+  // M8.5: Atomic Sync
+  _syncCacheToTargets(cacheDir);
+}
+
+void _syncCacheToTargets(Directory cacheDir) {
+  print('[JET] 🔄 Synchronizing .jet_cache to target environments...');
+  
+  // For demonstration/default, we assume the Jaspr web app is located at '../website'
+  // In a production release, this would be read from a jet.yaml config file.
+  final jasprTargetDir = Directory(p.join('..', 'website', 'lib', 'ui'));
+  final flutterTargetDir = Directory(p.join('..', 'mobile', 'lib', 'ui')); // For future 2-way transpilation
+  
+  int syncCount = 0;
+
+  for (final entity in cacheDir.listSync()) {
+    if (entity is! File) continue;
+    final filename = p.basename(entity.path);
+
+    // Skip preview files
+    if (filename.startsWith('preview@')) continue;
+
+    if (filename.endsWith('.jaspr.dart')) {
+      if (!jasprTargetDir.existsSync()) {
+        jasprTargetDir.createSync(recursive: true);
+      }
+      // Drop the .jaspr label when moving to the final destination
+      final finalName = filename.replaceFirst('.jaspr.dart', '.dart');
+      final targetFile = File(p.join(jasprTargetDir.path, finalName));
+      entity.copySync(targetFile.path);
+      syncCount++;
+    } 
+    else if (filename.endsWith('.flutter.dart')) {
+      if (!flutterTargetDir.existsSync()) {
+        flutterTargetDir.createSync(recursive: true);
+      }
+      // Drop the .flutter label when moving to the final destination
+      final finalName = filename.replaceFirst('.flutter.dart', '.dart');
+      final targetFile = File(p.join(flutterTargetDir.path, finalName));
+      entity.copySync(targetFile.path);
+      syncCount++;
+    }
   }
+
+  print('[JET] ✅ Successfully synced $syncCount files to their native environments.');
 }
 
 Future<void> _runBuildSingle(String filePath) async {
