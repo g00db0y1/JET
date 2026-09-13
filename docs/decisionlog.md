@@ -98,3 +98,10 @@ Decisions are logged in the format: `[UD|AD]-NNN | Status | Title`
 **Date**: 2026-09-14  
 **Decision**: For Milestone 3 (The Render Expansion), JET will adopt a multi-pass architecture inspired by C2Rust. Pass 1 (The Raw Emitter) prioritizes absolute visual correctness (even if it generates messy, inline absolute positioning). Pass 2 (The Tailwind Optimizer) acts as a refactoring pass to convert raw CSS into idiomatic Tailwind utility classes. Additionally, string-based Golden Tests will be augmented with Visual Cross-Checking (Headless Browser Screenshot Diffing).
 **Rationale**: Trying to map complex Flutter math (Slivers, Stacks, Physics) directly into beautiful, idiomatic Tailwind flexbox in a single pass is fundamentally flawed. Separating visual correctness from code cleanliness makes complex UI transpilation mathematically solvable and vastly easier to debug.
+
+---
+
+## AD-009 | USED | Intermediate Representation (IR) & No Emulation Bloat (dart2js Lessons)
+**Date**: 2026-09-14  
+**Decision**: JET will introduce an Intermediate Representation (IR) layer (`JetDomNode` tree) between the Flutter AST and the Jaspr String emitter. Additionally, JET refuses to bloat the DOM by perfectly emulating Skia APIs (e.g. `CustomPaint`); it will instead fail gracefully and enforce `@JetFallback`. Finally, JET will generate a tree-shaken Tailwind CSS file based ONLY on the generated IR.
+**Rationale**: Lessons extracted from `dart compile js` (`dart2js`). Directly compiling to strings prevents holistic optimization. Furthermore, `dart2js` suffered from massive performance bloat when it tried to perfectly emulate Dart-native behaviors in JavaScript. JET avoids the "Semantic Emulation Bloat" trap by letting the web be the web.
