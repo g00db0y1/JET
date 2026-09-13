@@ -59,9 +59,13 @@ void main() {
         } else {
           // Compare against existing golden file
           final expectedCode = expectedFile.readAsStringSync();
+          
+          final normalizedGenerated = generatedCode.replaceAll('\r\n', '\n');
+          final normalizedExpected = expectedCode.replaceAll('\r\n', '\n');
+          
           expect(
-            generatedCode, 
-            equals(expectedCode),
+            normalizedGenerated, 
+            equals(normalizedExpected),
             reason: 'Generated Jaspr code does not match the golden file for $relativePath.',
           );
         }
