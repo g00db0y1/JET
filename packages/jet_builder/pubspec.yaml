@@ -11,12 +11,15 @@ resolution: workspace
 
 dependencies:
   analyzer: ^7.0.0
+  args: ^2.4.0
   build: ^2.4.0
   source_gen: ^2.0.0
-  code_builder: ^4.10.0
+  code_builder: ^4.12.0
   dart_style: ^3.0.0
   path: ^1.9.0
   collection: ^1.18.0
+  csslib: ^1.0.2
+  html: ^0.15.7
   jet_annotations:
     path: ../jet_annotations
 
