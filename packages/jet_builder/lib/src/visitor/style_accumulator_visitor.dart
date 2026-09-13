@@ -145,6 +145,11 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
       'Stack' => _visitStack(args),
       'ListView' when constructorName == null => _visitListView(args),
       'ListView' when constructorName == 'builder' => _visitListViewBuilder(),
+      'SingleChildScrollView' => _visitSingleChildScrollView(args),
+      'CustomScrollView' => _visitCustomScrollView(args),
+      'SliverList' => _visitSliverList(args),
+      'SliverToBoxAdapter' => _visitSliverToBoxAdapter(args),
+      'SliverAppBar' => _visitSliverAppBar(args),
       'GridView' when constructorName == 'count' => _visitGridViewCount(args),
       'Scaffold' => _visitScaffold(args),
       'AppBar' => _visitAppBar(args),
@@ -319,7 +324,8 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
   }
 
   StructuralNode _visitListView(ArgumentList args) {
-    final classes = _flushBucketWith(['flex', 'flex-col']);
+    final classes = _flushBucketWith(['flex', 'flex-col', 'overflow-y-auto']);
+    _applyPhysics(args, classes);
     return StructuralNode(
       htmlTag: 'ul',
       ownClasses: classes,
@@ -328,11 +334,98 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
   }
 
   StructuralNode _visitListViewBuilder() {
-    final classes = _flushBucketWith(['flex', 'flex-col']);
+    final classes = _flushBucketWith(['flex', 'flex-col', 'overflow-y-auto']);
     return StructuralNode(
       htmlTag: 'ul',
       ownClasses: classes,
       children: [const UnknownNode(originalWidgetName: 'ListView.builder:itemBuilder')],
+    );
+  }
+
+  StructuralNode _visitSingleChildScrollView(ArgumentList args) {
+    // Default to vertical scrolling, check scrollDirection if needed
+    final directionExpr = _getArgNamed(args, 'scrollDirection');
+    final isHorizontal = directionExpr?.toSource().contains('horizontal') ?? false;
+    
+    final classes = _flushBucketWith([
+      'flex', 
+      isHorizontal ? 'flex-row' : 'flex-col', 
+      isHorizontal ? 'overflow-x-auto' : 'overflow-y-auto'
+    ]);
+    
+    _applyPhysics(args, classes);
+    
+    final child = visitExpr(_getArgNamed(args, 'child'));
+    
+    return StructuralNode(
+      htmlTag: 'div',
+      ownClasses: classes,
+      children: child != null ? [child] : [],
+    );
+  }
+
+  StructuralNode _visitCustomScrollView(ArgumentList args) {
+    final classes = _flushBucketWith(['flex', 'flex-col', 'overflow-y-auto']);
+    _applyPhysics(args, classes);
+    return StructuralNode(
+      htmlTag: 'div',
+      ownClasses: classes,
+      children: _visitChildrenList(args), // iterates slivers
+    );
+  }
+
+  StructuralNode _visitSliverList(ArgumentList args) {
+    // On the web, slivers inside a scrolling flexbox can just act as a standard flex block.
+    final classes = _flushBucketWith(['flex', 'flex-col']);
+    
+    // In Flutter, SliverList usually takes a delegate. For AST parsing we'll extract delegate children if possible.
+    final delegateExpr = _getArgNamed(args, 'delegate');
+    List<WidgetNode> children = [];
+    if (delegateExpr is InstanceCreationExpression) {
+      if (delegateExpr.constructorName.type.name2.lexeme == 'SliverChildListDelegate') {
+        final delegateArgs = delegateExpr.argumentList.arguments;
+        if (delegateArgs.isNotEmpty) {
+          final firstArg = delegateArgs.first;
+          if (firstArg is ListLiteral) {
+            children = firstArg.elements
+                .whereType<Expression>()
+                .map(visitExpr)
+                .whereType<WidgetNode>()
+                .toList();
+          }
+        }
+      } else {
+        children = [const UnknownNode(originalWidgetName: 'SliverList:SliverChildBuilderDelegate')];
+      }
+    }
+
+    return StructuralNode(
+      htmlTag: 'ul',
+      ownClasses: classes,
+      children: children,
+    );
+  }
+
+  StructuralNode _visitSliverToBoxAdapter(ArgumentList args) {
+    final child = visitExpr(_getArgNamed(args, 'child'));
+    final classes = _flushBucketWith([]);
+    return StructuralNode(
+      htmlTag: 'div',
+      ownClasses: classes,
+      children: child != null ? [child] : [],
+    );
+  }
+
+  StructuralNode _visitSliverAppBar(ArgumentList args) {
+    // A SliverAppBar typically becomes a sticky header
+    final classes = _flushBucketWith(['sticky', 'top-0', 'z-50', 'bg-white', 'shadow']);
+    
+    final titleNode = visitExpr(_getArgNamed(args, 'title'));
+    
+    return StructuralNode(
+      htmlTag: 'header',
+      ownClasses: classes,
+      children: titleNode != null ? [titleNode] : [],
     );
   }
 
@@ -699,6 +792,20 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
     final expr = _getArgNamed(args, 'crossAxisAlignment');
     if (expr != null) {
       classes.add(TailwindMapper.crossAxisAlignmentToItems(expr.toSource()));
+    }
+  }
+
+  void _applyPhysics(ArgumentList args, List<String> classes) {
+    final expr = _getArgNamed(args, 'physics');
+    if (expr != null) {
+      final source = expr.toSource();
+      if (source.contains('BouncingScrollPhysics')) {
+        classes.add('overscroll-contain');
+      } else if (source.contains('ClampingScrollPhysics')) {
+        classes.add('overscroll-none');
+      } else if (source.contains('PageScrollPhysics')) {
+        classes.addAll(['snap-y', 'snap-mandatory']);
+      }
     }
   }
 

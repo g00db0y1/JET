@@ -363,23 +363,102 @@ class Demo extends StatelessWidget {
     test('Extracts path and title from @JetRoute', () {
       final components = transpile('''
 import 'package:flutter/widgets.dart';
-
-class JetRoute {
-  final String path;
-  final String title;
-  const JetRoute({required this.path, required this.title});
-}
+import 'package:jet_annotations/jet_annotations.dart';
 
 @JetRoute(path: '/about', title: 'About Us')
-class AboutScreen extends StatelessWidget {
+class AboutPage extends StatelessWidget {
   @override
-  Widget build(BuildContext context) => Column(children: []);
+  Widget build(BuildContext context) => Text('About');
 }
 ''');
-      final component = components.first;
-      expect(component.routeMetadata, isNotNull);
-      expect(component.routeMetadata!.path, equals('/about'));
-      expect(component.routeMetadata!.title, equals('About Us'));
+      expect(components.first.routeMetadata?.path, equals('/about'));
+      expect(components.first.routeMetadata?.title, equals('About Us'));
+    });
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Phase 2: Physics Engine Mapping & Slivers
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  group('Phase 2: Physics and Slivers', () {
+    test('ListView with BouncingScrollPhysics maps to overscroll-contain', () {
+      final components = transpile('''
+import 'package:flutter/widgets.dart';
+class Demo extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      physics: BouncingScrollPhysics(),
+      children: [],
+    );
+  }
+}
+''');
+      final lv = components.first.buildBody as StructuralNode;
+      expect(lv.ownClasses, contains('overscroll-contain'));
+    });
+
+    test('SingleChildScrollView with PageScrollPhysics maps to snap', () {
+      final components = transpile('''
+import 'package:flutter/widgets.dart';
+class Demo extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      physics: PageScrollPhysics(),
+      child: Text('Snap'),
+    );
+  }
+}
+''');
+      final scsv = components.first.buildBody as StructuralNode;
+      expect(scsv.ownClasses, containsAll(['snap-y', 'snap-mandatory']));
+    });
+
+    test('CustomScrollView and Slivers map correctly', () {
+      final components = transpile('''
+import 'package:flutter/widgets.dart';
+class Demo extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return CustomScrollView(
+      physics: ClampingScrollPhysics(),
+      slivers: [
+        SliverAppBar(
+          title: Text('Header'),
+        ),
+        SliverList(
+          delegate: SliverChildListDelegate([
+            Text('Item 1'),
+            Text('Item 2'),
+          ]),
+        ),
+        SliverToBoxAdapter(
+          child: Text('Footer'),
+        ),
+      ],
+    );
+  }
+}
+''');
+      final csv = components.first.buildBody as StructuralNode;
+      expect(csv.htmlTag, equals('div'));
+      expect(csv.ownClasses, contains('overflow-y-auto'));
+      expect(csv.ownClasses, contains('overscroll-none')); // ClampingScrollPhysics
+      
+      expect(csv.children, hasLength(3));
+      
+      final appBar = csv.children[0] as StructuralNode;
+      expect(appBar.htmlTag, equals('header'));
+      expect(appBar.ownClasses, containsAll(['sticky', 'top-0', 'z-50']));
+      
+      final list = csv.children[1] as StructuralNode;
+      expect(list.htmlTag, equals('ul'));
+      expect(list.children, hasLength(2));
+      
+      final adapter = csv.children[2] as StructuralNode;
+      expect(adapter.htmlTag, equals('div'));
+      expect(adapter.children, hasLength(1));
     });
   });
 }
