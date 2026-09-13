@@ -11,4 +11,3 @@ const Map<String, String> tailwindDictionary = {
   'text-align: center': 'text-center',
   'font-weight: bold': 'font-bold',
 };
-

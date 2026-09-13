@@ -25,13 +25,15 @@ void main() {
     group('edgeInsetsSymmetricToPadding', () {
       test('maps horizontal:16, vertical:8 → px-4 py-2', () {
         expect(
-          TailwindMapper.edgeInsetsSymmetricToPadding(horizontal: 16, vertical: 8),
+          TailwindMapper.edgeInsetsSymmetricToPadding(
+              horizontal: 16, vertical: 8),
           equals('px-4 py-2'),
         );
       });
       test('maps horizontal:32, vertical:16 → px-8 py-4', () {
         expect(
-          TailwindMapper.edgeInsetsSymmetricToPadding(horizontal: 32, vertical: 16),
+          TailwindMapper.edgeInsetsSymmetricToPadding(
+              horizontal: 32, vertical: 16),
           equals('px-8 py-4'),
         );
       });
@@ -46,7 +48,8 @@ void main() {
       });
       test('spaceBetween → justify-between', () {
         expect(
-          TailwindMapper.mainAxisAlignmentToJustify('MainAxisAlignment.spaceBetween'),
+          TailwindMapper.mainAxisAlignmentToJustify(
+              'MainAxisAlignment.spaceBetween'),
           equals('justify-between'),
         );
       });
@@ -67,7 +70,8 @@ void main() {
       });
       test('stretch → items-stretch', () {
         expect(
-          TailwindMapper.crossAxisAlignmentToItems('CrossAxisAlignment.stretch'),
+          TailwindMapper.crossAxisAlignmentToItems(
+              'CrossAxisAlignment.stretch'),
           equals('items-stretch'),
         );
       });

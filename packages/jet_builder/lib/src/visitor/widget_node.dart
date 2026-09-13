@@ -117,8 +117,7 @@ class ComponentNode extends WidgetNode {
   final List<ComponentParam> constructorParams;
 
   @override
-  String toString() =>
-      'ComponentNode(${isStateful ? '@client ' : ''}$name)';
+  String toString() => 'ComponentNode(${isStateful ? '@client ' : ''}$name)';
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

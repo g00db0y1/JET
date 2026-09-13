@@ -12,7 +12,8 @@ Future<void> runPreview(String filePath, {int? lineNumber}) async {
     exit(1);
   }
 
-  print('[JET] 🚀 Previewing $filePath${lineNumber != null ? ' (Line $lineNumber)' : ''}...\n');
+  print(
+      '[JET] 🚀 Previewing $filePath${lineNumber != null ? ' (Line $lineNumber)' : ''}...\n');
 
   final source = file.readAsStringSync();
   final stopwatch = Stopwatch()..start();
@@ -59,10 +60,11 @@ Future<void> runPreview(String filePath, {int? lineNumber}) async {
   parseResult.unit!.accept(visitor);
 
   final emitter = JasprEmitter();
-  
+
   var componentsToEmit = visitor.components;
   if (targetClassName != null) {
-    componentsToEmit = componentsToEmit.where((c) => c.name == targetClassName).toList();
+    componentsToEmit =
+        componentsToEmit.where((c) => c.name == targetClassName).toList();
   }
 
   if (componentsToEmit.isEmpty) {
@@ -79,9 +81,11 @@ Future<void> runPreview(String filePath, {int? lineNumber}) async {
   stopwatch.stop();
 
   // Print Output
-  print('// ─────────────────────────────────────────────────────────────────────────────');
+  print(
+      '// ─────────────────────────────────────────────────────────────────────────────');
   print('// ✨ Transpiled to Jaspr in ${stopwatch.elapsedMilliseconds}ms');
-  print('// ─────────────────────────────────────────────────────────────────────────────\n');
+  print(
+      '// ─────────────────────────────────────────────────────────────────────────────\n');
   print(jasprCode);
 
   // Feature 2: Save preview@filename.jaspr.dart in .jet_cache if it was a full file

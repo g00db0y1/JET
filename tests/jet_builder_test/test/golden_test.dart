@@ -9,7 +9,7 @@ import 'package:jet_builder/src/emitter/jaspr_emitter.dart';
 void main() {
   // Pass UPDATE_GOLDENS=true to overwrite the expected files
   final updateGoldens = Platform.environment['UPDATE_GOLDENS'] == 'true';
-  
+
   // Resolve paths relative to the test project root
   final corpusDir = Directory('../../tests/corpus');
   final expectedDir = Directory('../../tests/expected');
@@ -28,17 +28,18 @@ void main() {
 
     for (final file in dartFiles) {
       final relativePath = p.relative(file.path, from: corpusDir.path);
-      
+
       test('Matches golden output for $relativePath', () {
         final sourceCode = file.readAsStringSync();
         final parser = FlutterAstParser();
         final result = parser.parse(source: sourceCode, path: file.path);
-        
-        expect(result.isUsable, isTrue, reason: 'AST Parse failed: ${result.failureMessage}');
-        
+
+        expect(result.isUsable, isTrue,
+            reason: 'AST Parse failed: ${result.failureMessage}');
+
         final visitor = StyleAccumulatorVisitor();
         result.unit!.accept(visitor);
-        
+
         final emitter = JasprEmitter();
         final generatedCode = emitter.emitFile(
           components: visitor.components,
@@ -47,7 +48,7 @@ void main() {
         );
 
         final expectedFile = File(p.join(
-          expectedDir.path, 
+          expectedDir.path,
           relativePath.replaceFirst('.dart', '.expected.dart'),
         ));
 
@@ -59,14 +60,15 @@ void main() {
         } else {
           // Compare against existing golden file
           final expectedCode = expectedFile.readAsStringSync();
-          
+
           final normalizedGenerated = generatedCode.replaceAll('\r\n', '\n');
           final normalizedExpected = expectedCode.replaceAll('\r\n', '\n');
-          
+
           expect(
-            normalizedGenerated, 
+            normalizedGenerated,
             equals(normalizedExpected),
-            reason: 'Generated Jaspr code does not match the golden file for $relativePath.',
+            reason:
+                'Generated Jaspr code does not match the golden file for $relativePath.',
           );
         }
       });

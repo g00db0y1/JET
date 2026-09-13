@@ -2,7 +2,7 @@
 // Tests: P-001 (Flutter in logic), P-002 (Navigator.push in UI)
 // This file should trigger linter violations — NOT generate clean output
 import 'package:flutter/widgets.dart';
-import 'package:shared_preferences/shared_preferences.dart';  // P-003
+import 'package:shared_preferences/shared_preferences.dart'; // P-003
 
 class PoisonedScreen extends StatelessWidget {
   const PoisonedScreen({super.key});

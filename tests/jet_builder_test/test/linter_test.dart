@@ -12,7 +12,8 @@ void main() {
     sniffer = const PoisonSniffer();
   });
 
-  List<LinterViolation> lint(String source, {String path = 'lib/state/controller.dart'}) {
+  List<LinterViolation> lint(String source,
+      {String path = 'lib/state/controller.dart'}) {
     final result = parser.parse(source: source, path: path);
     if (!result.isUsable) return [];
     return sniffer.analyze(unit: result.unit!, filePath: path);
@@ -130,7 +131,8 @@ void navigate(context) {
       expect(violations.where((v) => v.rule == 'P-003'), isNotEmpty);
     });
 
-    test('Does not flag dart:io in logic files (dart:io is cross-platform)', () {
+    test('Does not flag dart:io in logic files (dart:io is cross-platform)',
+        () {
       final violations = lint(
         "import 'dart:io';\nvoid main() {}",
         path: 'lib/state/some_service.dart',

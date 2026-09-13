@@ -34,7 +34,8 @@ class JetBuilderImpl implements Builder {
 
   final BuilderOptions options;
 
-  static final _formatter = DartFormatter(languageVersion: DartFormatter.latestLanguageVersion);
+  static final _formatter =
+      DartFormatter(languageVersion: DartFormatter.latestLanguageVersion);
   static const _parser = FlutterAstParser();
   static const _sniffer = PoisonSniffer();
   static const _emitter = JasprEmitter();
@@ -59,7 +60,8 @@ class JetBuilderImpl implements Builder {
     }
 
     // Skip files that contain no widget class declarations (quick check)
-    if (!source.contains('StatelessWidget') && !source.contains('StatefulWidget')) {
+    if (!source.contains('StatelessWidget') &&
+        !source.contains('StatefulWidget')) {
       log.fine('[JET] Skipping $inputPath — no Flutter widget classes found');
       return;
     }
@@ -68,7 +70,8 @@ class JetBuilderImpl implements Builder {
     final parseResult = _parser.parse(source: source, path: inputPath);
 
     if (!parseResult.isUsable) {
-      log.warning('[JET] Parse failed for $inputPath: ${parseResult.failureMessage}');
+      log.warning(
+          '[JET] Parse failed for $inputPath: ${parseResult.failureMessage}');
       return;
     }
 
@@ -114,6 +117,7 @@ class JetBuilderImpl implements Builder {
     final outputId = inputId.changeExtension('.jaspr.dart');
     await buildStep.writeAsString(outputId, generated);
 
-    log.info('[JET] ✅ Generated ${outputId.path} (${visitor.components.length} component(s))');
+    log.info(
+        '[JET] ✅ Generated ${outputId.path} (${visitor.components.length} component(s))');
   }
 }

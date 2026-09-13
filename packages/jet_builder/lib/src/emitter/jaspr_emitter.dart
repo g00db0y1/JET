@@ -110,10 +110,12 @@ import 'package:jaspr/jaspr.dart';
     buffer.writeln('  const ${component.name}({super.key});');
     buffer.writeln();
     buffer.writeln('  @override');
-    buffer.writeln('  State<${component.name}> createState() => _${component.name}State();');
+    buffer.writeln(
+        '  State<${component.name}> createState() => _${component.name}State();');
     buffer.writeln('}');
     buffer.writeln();
-    buffer.writeln('class _${component.name}State extends State<${component.name}> {');
+    buffer.writeln(
+        'class _${component.name}State extends State<${component.name}> {');
     buffer.writeln('  // TODO(jet): migrate StatefulWidget state fields here');
     buffer.writeln();
     buffer.writeln('  @override');
@@ -182,9 +184,8 @@ import 'package:jaspr/jaspr.dart';
     final childrenParts = <String>[];
 
     if (hasText) {
-      final escapedText = node.textContent!
-          .replaceAll("'", "\\'")
-          .replaceAll('\n', '\\n');
+      final escapedText =
+          node.textContent!.replaceAll("'", "\\'").replaceAll('\n', '\\n');
       childrenParts.add("${pad}text('$escapedText')");
     }
 

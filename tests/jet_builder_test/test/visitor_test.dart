@@ -18,7 +18,8 @@ void main() {
   /// Parses [source] and runs the visitor. Returns the list of ComponentNodes.
   List<ComponentNode> transpile(String source) {
     final result = parser.parse(source: source, path: 'lib/ui/test.dart');
-    expect(result.isUsable, isTrue, reason: 'Parse failed: ${result.failureMessage}');
+    expect(result.isUsable, isTrue,
+        reason: 'Parse failed: ${result.failureMessage}');
     final visitor = StyleAccumulatorVisitor();
     result.unit!.accept(visitor);
     return visitor.components;
@@ -79,7 +80,8 @@ class WidgetB extends StatelessWidget {
 }
 ''');
       expect(components, hasLength(2));
-      expect(components.map((c) => c.name), containsAll(['WidgetA', 'WidgetB']));
+      expect(
+          components.map((c) => c.name), containsAll(['WidgetA', 'WidgetB']));
     });
   });
 
@@ -123,7 +125,8 @@ class Demo extends StatelessWidget {
 }
 ''');
       final body = components.first.buildBody as StructuralNode;
-      expect(body.allClasses, containsAll(['flex', 'items-center', 'justify-center']));
+      expect(body.allClasses,
+          containsAll(['flex', 'items-center', 'justify-center']));
     });
 
     test('SizedBox(width:16) accumulates w-4', () {
@@ -301,7 +304,8 @@ class Demo extends StatelessWidget {
       expect(button.needsClientAnnotation, isTrue);
     });
 
-    test('ElevatedButton causes ComponentNode.isStateful=true (client bubble)', () {
+    test('ElevatedButton causes ComponentNode.isStateful=true (client bubble)',
+        () {
       final components = transpile('''
 import 'package:flutter/material.dart';
 class Demo extends StatelessWidget {
@@ -444,18 +448,19 @@ class Demo extends StatelessWidget {
       final csv = components.first.buildBody as StructuralNode;
       expect(csv.htmlTag, equals('div'));
       expect(csv.ownClasses, contains('overflow-y-auto'));
-      expect(csv.ownClasses, contains('overscroll-none')); // ClampingScrollPhysics
-      
+      expect(
+          csv.ownClasses, contains('overscroll-none')); // ClampingScrollPhysics
+
       expect(csv.children, hasLength(3));
-      
+
       final appBar = csv.children[0] as StructuralNode;
       expect(appBar.htmlTag, equals('header'));
       expect(appBar.ownClasses, containsAll(['sticky', 'top-0', 'z-50']));
-      
+
       final list = csv.children[1] as StructuralNode;
       expect(list.htmlTag, equals('ul'));
       expect(list.children, hasLength(2));
-      
+
       final adapter = csv.children[2] as StructuralNode;
       expect(adapter.htmlTag, equals('div'));
       expect(adapter.children, hasLength(1));

@@ -13,10 +13,10 @@ class HeroSection extends StatelessWidget {
   }
 }
 ''';
-  
+
   final result = parser.parse(source: source, path: 'test.dart');
   print('Parsed!');
-  
+
   final visitor = StyleAccumulatorVisitor();
   print('Visiting...');
   result.unit!.accept(visitor);

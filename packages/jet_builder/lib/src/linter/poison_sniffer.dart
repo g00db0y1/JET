@@ -23,27 +23,33 @@ class PoisonSniffer {
   static const platformPlugins = <String, WebEquivalent>{
     'shared_preferences': WebEquivalent(
       isPureDart: true,
-      suggestion: 'Use dart:html window.localStorage or package:web for local web storage.',
+      suggestion:
+          'Use dart:html window.localStorage or package:web for local web storage.',
     ),
     'sqflite': WebEquivalent(
       isPureDart: true,
-      suggestion: 'Web browsers do not support SQLite natively. Use IndexedDB or migrate to a cross-platform DB like package:drift.',
+      suggestion:
+          'Web browsers do not support SQLite natively. Use IndexedDB or migrate to a cross-platform DB like package:drift.',
     ),
     'path_provider': WebEquivalent(
       isPureDart: true,
-      suggestion: 'Web apps lack local filesystems. Use IndexedDB for blobs, or upload to a server.',
+      suggestion:
+          'Web apps lack local filesystems. Use IndexedDB for blobs, or upload to a server.',
     ),
     'url_launcher': WebEquivalent(
       isPureDart: true,
-      suggestion: "Use dart:html window.open(url, '_blank') to launch URLs on the web.",
+      suggestion:
+          "Use dart:html window.open(url, '_blank') to launch URLs on the web.",
     ),
     'connectivity_plus': WebEquivalent(
       isPureDart: true,
-      suggestion: 'Use window.navigator.onLine to check network status in Jaspr.',
+      suggestion:
+          'Use window.navigator.onLine to check network status in Jaspr.',
     ),
     'stripe_payment': WebEquivalent(
       isPureDart: false,
-      suggestion: 'Stripe requires the official Stripe.js web SDK. You must use JavaScript Interop.',
+      suggestion:
+          'Stripe requires the official Stripe.js web SDK. You must use JavaScript Interop.',
       jsInteropTemplate: '''
 // 1. Add <script src="https://js.stripe.com/v3/"></script> to web/index.html
 // 2. Create an interop file (e.g. lib/ports/stripe_interop.dart):
@@ -61,7 +67,8 @@ extension type StripeJs._(JSObject _) implements JSObject {
     ),
     'firebase_core': WebEquivalent(
       isPureDart: false,
-      suggestion: 'Use the official Firebase JS SDK via dart:js_interop for Jaspr web builds.',
+      suggestion:
+          'Use the official Firebase JS SDK via dart:js_interop for Jaspr web builds.',
     ),
   };
 
@@ -90,7 +97,8 @@ extension type StripeJs._(JSObject _) implements JSObject {
     print('[JET LINTER] ${violations.length} violation(s) found:');
     for (final v in violations) {
       // ignore: avoid_print
-      print('  ${v.severity == 'error' ? '❌' : '⚠️'} [${v.rule}] ${v.file}:${v.line}');
+      print(
+          '  ${v.severity == 'error' ? '❌' : '⚠️'} [${v.rule}] ${v.file}:${v.line}');
       // ignore: avoid_print
       print('     ${v.message}');
       if (v.suggestion != null) {
@@ -154,13 +162,15 @@ class _PoisonVisitor extends RecursiveAstVisitor<void> {
         final plugin = entry.key;
         final equivalent = entry.value;
         if (importUri.contains(plugin)) {
-          var fullSuggestion = 'Create an abstract interface in lib/ports/ and move $plugin usage to a mobile adapter.\n\n'
+          var fullSuggestion =
+              'Create an abstract interface in lib/ports/ and move $plugin usage to a mobile adapter.\n\n'
               '🌐 Web Equivalent:\n${equivalent.suggestion}';
-              
+
           if (equivalent.jsInteropTemplate != null) {
-            fullSuggestion += '\n\n💡 JS Interop Template:\n${equivalent.jsInteropTemplate}';
+            fullSuggestion +=
+                '\n\n💡 JS Interop Template:\n${equivalent.jsInteropTemplate}';
           }
-          
+
           violations.add(LinterViolation(
             rule: 'P-003',
             severity: 'error',
@@ -193,8 +203,7 @@ class _PoisonVisitor extends RecursiveAstVisitor<void> {
         file: filePath,
         line: _getLine(node),
         message: 'context.go() detected in a transpilable UI file.',
-        suggestion:
-            'Replace with a VoidCallback parameter: '
+        suggestion: 'Replace with a VoidCallback parameter: '
             '`final VoidCallback onNavigate; ... onPressed: onNavigate`. '
             'Pass the actual route from the platform-specific router.',
       ));
@@ -202,7 +211,9 @@ class _PoisonVisitor extends RecursiveAstVisitor<void> {
 
     // Navigator.push / Navigator.pushNamed / Navigator.pushReplacement
     if (targetSrc == 'Navigator' &&
-        (methodName == 'push' || methodName == 'pushNamed' || methodName == 'pushReplacement')) {
+        (methodName == 'push' ||
+            methodName == 'pushNamed' ||
+            methodName == 'pushReplacement')) {
       violations.add(LinterViolation(
         rule: 'P-002',
         severity: 'error',
@@ -236,7 +247,8 @@ class _PoisonVisitor extends RecursiveAstVisitor<void> {
           ));
         }
 
-        final apiCallPattern = RegExp(r'\b(fetch|httpGet|httpPost|loadData|getUser|apiCall)\b');
+        final apiCallPattern =
+            RegExp(r'\b(fetch|httpGet|httpPost|loadData|getUser|apiCall)\b');
         if (apiCallPattern.hasMatch(bodySrc)) {
           violations.add(LinterViolation(
             rule: 'P-004',

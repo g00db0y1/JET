@@ -10,17 +10,20 @@ void main() {
     });
 
     test('replaces exact raw styles with tailwind classes', () {
-      final rawCode = "div(styles: Styles.raw('display: flex; flex-direction: column;'), [text('Hello')])";
+      final rawCode =
+          "div(styles: Styles.raw('display: flex; flex-direction: column;'), [text('Hello')])";
       final optimized = optimizer.optimize(rawCode);
-      
+
       expect(optimized, "div(classes: 'flex flex-col', [text('Hello')])");
     });
 
     test('preserves unknown styles as raw CSS', () {
-      final rawCode = "div(styles: Styles.raw('display: flex; custom-property: 10px;'), [text('Hello')])";
+      final rawCode =
+          "div(styles: Styles.raw('display: flex; custom-property: 10px;'), [text('Hello')])";
       final optimized = optimizer.optimize(rawCode);
-      
-      expect(optimized, "div(classes: 'flex', styles: Styles.raw('custom-property: 10px;'), [text('Hello')])");
+
+      expect(optimized,
+          "div(classes: 'flex', styles: Styles.raw('custom-property: 10px;'), [text('Hello')])");
     });
 
     test('handles multiple style blocks in one file', () {
@@ -29,9 +32,9 @@ void main() {
           span(styles: Styles.raw('font-weight: bold;'), [text('Text')])
         ])
       ''';
-      
+
       final optimized = optimizer.optimize(rawCode);
-      
+
       expect(optimized, contains("classes: 'w-full'"));
       expect(optimized, contains("classes: 'font-bold'"));
       expect(optimized, isNot(contains("Styles.raw")));

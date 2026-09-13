@@ -4,9 +4,9 @@ import 'package:puppeteer/puppeteer.dart';
 import 'package:image/image.dart' as img;
 
 /// Visual Cross-Checking Test Suite (CI/CD Ready)
-/// 
-/// This script spins up a headless Chrome browser to take screenshots 
-/// of the original Flutter app and the transpiled Jaspr app, diffing them 
+///
+/// This script spins up a headless Chrome browser to take screenshots
+/// of the original Flutter app and the transpiled Jaspr app, diffing them
 /// pixel-by-pixel to guarantee absolute visual correctness.
 void main() {
   group('Visual Cross-Checking (Puppeteer)', () {
@@ -15,16 +15,17 @@ void main() {
     Process? jasprServer;
 
     setUpAll(() async {
-      print('[JET] 🌐 Launching Headless Chrome via Puppeteer (Mocked for CI)...');
+      print(
+          '[JET] 🌐 Launching Headless Chrome via Puppeteer (Mocked for CI)...');
       // browser = await puppeteer.launch(headless: true);
 
       // TODO: When our test corpus apps are fully runnable, uncomment to boot local servers
       // print('[JET] 🚀 Starting Flutter Web Server (8080)...');
       // flutterServer = await Process.start('flutter', ['run', '-d', 'web-server', '--web-port', '8080']);
-      
+
       // print('[JET] 🚀 Starting Jaspr Server (8081)...');
       // jasprServer = await Process.start('jaspr', ['serve', '--port', '8081']);
-      
+
       // await Future.delayed(Duration(seconds: 5)); // Wait for servers to boot
     });
 
@@ -50,11 +51,11 @@ void main() {
       // final img1 = img.decodeImage(flutterScreenshot);
       // final img2 = img.decodeImage(jasprScreenshot);
       // expect(img1 != null && img2 != null, isTrue);
-      // 
+      //
       // double difference = _calculatePixelDiff(img1!, img2!);
       // print('[JET] Visual Difference: \${(difference * 100).toStringAsFixed(2)}%');
       // expect(difference, lessThan(0.01)); // 99% match required
-      
+
       print('[JET] ✅ Visual Cross-Check scaffold initialized successfully!');
     });
   });
@@ -71,7 +72,7 @@ double _calculatePixelDiff(img.Image img1, img.Image img2) {
     for (int x = 0; x < img1.width; x++) {
       final p1 = img1.getPixel(x, y);
       final p2 = img2.getPixel(x, y);
-      
+
       // Strict equality check (can be relaxed for anti-aliasing differences later)
       if (p1 != p2) {
         diffCount++;

@@ -7,7 +7,7 @@ import 'package:jet_builder/src/emitter/jaspr_emitter.dart';
 import 'package:jet_builder/src/linter/poison_sniffer.dart';
 
 /// JET MCP Server
-/// Provides AI agents with tools to transpile code, run the PoisonSniffer, 
+/// Provides AI agents with tools to transpile code, run the PoisonSniffer,
 /// and query the Web Equivalent Dictionary.
 void main() async {
   // Listen to stdin for JSON-RPC messages
@@ -48,7 +48,8 @@ void _handleRequest(Map<String, dynamic> request) {
         'tools': [
           {
             'name': 'jet_analyze',
-            'description': 'Run the JET PoisonSniffer to detect Flutter mobile plugins or bad architectures that prevent web transpilation.',
+            'description':
+                'Run the JET PoisonSniffer to detect Flutter mobile plugins or bad architectures that prevent web transpilation.',
             'inputSchema': {
               'type': 'object',
               'properties': {
@@ -62,7 +63,8 @@ void _handleRequest(Map<String, dynamic> request) {
           },
           {
             'name': 'jet_transpile',
-            'description': 'Transpile a Flutter UI file into Jaspr HTML/Tailwind code.',
+            'description':
+                'Transpile a Flutter UI file into Jaspr HTML/Tailwind code.',
             'inputSchema': {
               'type': 'object',
               'properties': {
@@ -76,13 +78,15 @@ void _handleRequest(Map<String, dynamic> request) {
           },
           {
             'name': 'jet_check_dependency',
-            'description': 'Check if a Flutter dependency is compatible with Jaspr or requires JS interop.',
+            'description':
+                'Check if a Flutter dependency is compatible with Jaspr or requires JS interop.',
             'inputSchema': {
               'type': 'object',
               'properties': {
                 'package_name': {
                   'type': 'string',
-                  'description': 'Name of the pub.dev package (e.g., shared_preferences)'
+                  'description':
+                      'Name of the pub.dev package (e.g., shared_preferences)'
                 }
               },
               'required': ['package_name']
@@ -90,13 +94,15 @@ void _handleRequest(Map<String, dynamic> request) {
           },
           {
             'name': 'jet_suggest_fix',
-            'description': 'Get official JET refactoring templates and suggestions for specific architectural violations.',
+            'description':
+                'Get official JET refactoring templates and suggestions for specific architectural violations.',
             'inputSchema': {
               'type': 'object',
               'properties': {
                 'rule_id': {
                   'type': 'string',
-                  'description': 'The violation rule ID (e.g., P-001, P-002, P-004)'
+                  'description':
+                      'The violation rule ID (e.g., P-001, P-002, P-004)'
                 }
               },
               'required': ['rule_id']
@@ -141,7 +147,7 @@ void _handleAnalyze(dynamic id, String? filePath) {
 
   final parser = FlutterAstParser();
   final result = parser.parse(source: file.readAsStringSync(), path: filePath);
-  
+
   if (!result.isUsable) {
     _sendToolResult(id, 'Parse failed: ${result.failureMessage}');
     return;
@@ -151,9 +157,13 @@ void _handleAnalyze(dynamic id, String? filePath) {
   final violations = sniffer.analyze(unit: result.unit!, filePath: filePath);
 
   if (violations.isEmpty) {
-    _sendToolResult(id, '✅ No architectural violations found. Ready for web transpilation.');
+    _sendToolResult(id,
+        '✅ No architectural violations found. Ready for web transpilation.');
   } else {
-    final report = violations.map((v) => '[${v.rule}] Line ${v.line}: ${v.message}\n💡 Suggestion: ${v.suggestion ?? ""}').join('\n\n');
+    final report = violations
+        .map((v) =>
+            '[${v.rule}] Line ${v.line}: ${v.message}\n💡 Suggestion: ${v.suggestion ?? ""}')
+        .join('\n\n');
     _sendToolResult(id, '⚠️ Violations Found:\n\n$report');
   }
 }
@@ -172,7 +182,7 @@ void _handleTranspile(dynamic id, String? filePath) {
 
   final parser = FlutterAstParser();
   final result = parser.parse(source: file.readAsStringSync(), path: filePath);
-  
+
   if (!result.isUsable) {
     _sendToolError(id, 'Parse failed: ${result.failureMessage}');
     return;
@@ -187,8 +197,9 @@ void _handleTranspile(dynamic id, String? filePath) {
   }
 
   final emitter = JasprEmitter();
-  final code = emitter.emitFile(components: visitor.components, sourceFile: filePath, version: 'MCP');
-  
+  final code = emitter.emitFile(
+      components: visitor.components, sourceFile: filePath, version: 'MCP');
+
   _sendToolResult(id, code);
 }
 
@@ -200,7 +211,8 @@ void _handleCheckDependency(dynamic id, String? packageName) {
 
   final equivalent = PoisonSniffer.platformPlugins[packageName];
   if (equivalent == null) {
-    _sendToolResult(id, 'No specific restrictions or web equivalents found for "$packageName". It may be cross-platform compatible natively.');
+    _sendToolResult(id,
+        'No specific restrictions or web equivalents found for "$packageName". It may be cross-platform compatible natively.');
     return;
   }
 
@@ -264,10 +276,12 @@ ref.read(dataProvider.notifier).fetch();
 ''';
       break;
     case 'P-003':
-      response = 'For P-003 (Platform Plugins), please use the `jet_check_dependency` tool to get the specific JS Interop template for your plugin.';
+      response =
+          'For P-003 (Platform Plugins), please use the `jet_check_dependency` tool to get the specific JS Interop template for your plugin.';
       break;
     default:
-      response = 'Unknown rule ID: $ruleId. Valid rules are P-001, P-002, P-003, P-004.';
+      response =
+          'Unknown rule ID: $ruleId. Valid rules are P-001, P-002, P-003, P-004.';
   }
 
   _sendToolResult(id, response);

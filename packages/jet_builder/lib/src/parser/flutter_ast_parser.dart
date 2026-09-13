@@ -24,7 +24,8 @@ class FlutterAstParser {
   /// to exist on disk.
   ParseResult parse({required String source, required String path}) {
     try {
-      final result = parseString(content: source, path: path, throwIfDiagnostics: false);
+      final result =
+          parseString(content: source, path: path, throwIfDiagnostics: false);
       final errors = result.errors
           .where((e) => e.errorCode.errorSeverity == ErrorSeverity.ERROR)
           .toList();

@@ -104,7 +104,8 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
           typeName = expr.methodName.name;
           constructorName = null;
         }
-        return _dispatchWidgetCreation(typeName, constructorName, expr.argumentList);
+        return _dispatchWidgetCreation(
+            typeName, constructorName, expr.argumentList);
       }
     }
 
@@ -112,7 +113,8 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
     if (expr is InstanceCreationExpression) {
       final typeName = expr.constructorName.type.name2.lexeme;
       final constructorName = expr.constructorName.name?.name;
-      return _dispatchWidgetCreation(typeName, constructorName, expr.argumentList);
+      return _dispatchWidgetCreation(
+          typeName, constructorName, expr.argumentList);
     }
 
     // Handle simple identifier references (e.g., const SomeWidget())
@@ -128,7 +130,8 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
     return null;
   }
 
-  WidgetNode? _dispatchWidgetCreation(String typeName, String? constructorName, ArgumentList args) {
+  WidgetNode? _dispatchWidgetCreation(
+      String typeName, String? constructorName, ArgumentList args) {
     return switch (typeName) {
       // ── Modifier Nodes ──────────────────────────────────────────────────
       'Padding' => _visitPadding(args),
@@ -166,9 +169,11 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
       'Image' when constructorName == 'asset' => _visitImageAsset(args),
 
       // ── Interactive Nodes (trigger @client) ──────────────────────────────
-      'ElevatedButton' => _visitButton(args, 'bg-blue-600 text-white rounded px-4 py-2 hover:bg-blue-700'),
+      'ElevatedButton' => _visitButton(
+          args, 'bg-blue-600 text-white rounded px-4 py-2 hover:bg-blue-700'),
       'TextButton' => _visitButton(args, 'text-blue-600 hover:underline'),
-      'OutlinedButton' => _visitButton(args, 'border border-blue-600 text-blue-600 rounded px-4 py-2'),
+      'OutlinedButton' => _visitButton(
+          args, 'border border-blue-600 text-blue-600 rounded px-4 py-2'),
       'TextField' || 'TextFormField' => _visitTextField(),
       'Form' => _visitForm(args),
       'Checkbox' => _visitCheckbox(),
@@ -249,8 +254,10 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
     final width = widthExpr != null ? _parseDouble(widthExpr) : null;
     final height = heightExpr != null ? _parseDouble(heightExpr) : null;
 
-    if (width != null) _bucket.add(TailwindMapper.sizedBoxWidthToClass(width) ?? 'w-auto');
-    if (height != null) _bucket.add(TailwindMapper.sizedBoxHeightToClass(height) ?? 'h-auto');
+    if (width != null)
+      _bucket.add(TailwindMapper.sizedBoxWidthToClass(width) ?? 'w-auto');
+    if (height != null)
+      _bucket.add(TailwindMapper.sizedBoxHeightToClass(height) ?? 'h-auto');
 
     final child = _getArgNamed(args, 'child');
     return visitExpr(child) ??
@@ -338,25 +345,28 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
     return StructuralNode(
       htmlTag: 'ul',
       ownClasses: classes,
-      children: [const UnknownNode(originalWidgetName: 'ListView.builder:itemBuilder')],
+      children: [
+        const UnknownNode(originalWidgetName: 'ListView.builder:itemBuilder')
+      ],
     );
   }
 
   StructuralNode _visitSingleChildScrollView(ArgumentList args) {
     // Default to vertical scrolling, check scrollDirection if needed
     final directionExpr = _getArgNamed(args, 'scrollDirection');
-    final isHorizontal = directionExpr?.toSource().contains('horizontal') ?? false;
-    
+    final isHorizontal =
+        directionExpr?.toSource().contains('horizontal') ?? false;
+
     final classes = _flushBucketWith([
-      'flex', 
-      isHorizontal ? 'flex-row' : 'flex-col', 
+      'flex',
+      isHorizontal ? 'flex-row' : 'flex-col',
       isHorizontal ? 'overflow-x-auto' : 'overflow-y-auto'
     ]);
-    
+
     _applyPhysics(args, classes);
-    
+
     final child = visitExpr(_getArgNamed(args, 'child'));
-    
+
     return StructuralNode(
       htmlTag: 'div',
       ownClasses: classes,
@@ -377,12 +387,13 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
   StructuralNode _visitSliverList(ArgumentList args) {
     // On the web, slivers inside a scrolling flexbox can just act as a standard flex block.
     final classes = _flushBucketWith(['flex', 'flex-col']);
-    
+
     // In Flutter, SliverList usually takes a delegate. For AST parsing we'll extract delegate children if possible.
     final delegateExpr = _getArgNamed(args, 'delegate');
     List<WidgetNode> children = [];
     if (delegateExpr is InstanceCreationExpression) {
-      if (delegateExpr.constructorName.type.name2.lexeme == 'SliverChildListDelegate') {
+      if (delegateExpr.constructorName.type.name2.lexeme ==
+          'SliverChildListDelegate') {
         final delegateArgs = delegateExpr.argumentList.arguments;
         if (delegateArgs.isNotEmpty) {
           final firstArg = delegateArgs.first;
@@ -395,7 +406,10 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
           }
         }
       } else {
-        children = [const UnknownNode(originalWidgetName: 'SliverList:SliverChildBuilderDelegate')];
+        children = [
+          const UnknownNode(
+              originalWidgetName: 'SliverList:SliverChildBuilderDelegate')
+        ];
       }
     }
 
@@ -418,10 +432,11 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
 
   StructuralNode _visitSliverAppBar(ArgumentList args) {
     // A SliverAppBar typically becomes a sticky header
-    final classes = _flushBucketWith(['sticky', 'top-0', 'z-50', 'bg-white', 'shadow']);
-    
+    final classes =
+        _flushBucketWith(['sticky', 'top-0', 'z-50', 'bg-white', 'shadow']);
+
     final titleNode = visitExpr(_getArgNamed(args, 'title'));
-    
+
     return StructuralNode(
       htmlTag: 'header',
       ownClasses: classes,
@@ -431,7 +446,8 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
 
   StructuralNode _visitGridViewCount(ArgumentList args) {
     final crossAxisCountExpr = _getArgNamed(args, 'crossAxisCount');
-    final count = crossAxisCountExpr != null ? (_parseInt(crossAxisCountExpr) ?? 2) : 2;
+    final count =
+        crossAxisCountExpr != null ? (_parseInt(crossAxisCountExpr) ?? 2) : 2;
     final classes = _flushBucketWith(['grid', 'grid-cols-$count', 'gap-4']);
     return StructuralNode(
       htmlTag: 'div',
@@ -461,7 +477,8 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
   }
 
   StructuralNode _visitAppBar(ArgumentList args) {
-    final classes = _flushBucketWith(['flex', 'items-center', 'px-4', 'py-2', 'bg-white', 'shadow']);
+    final classes = _flushBucketWith(
+        ['flex', 'items-center', 'px-4', 'py-2', 'bg-white', 'shadow']);
     final children = <WidgetNode>[];
 
     var titleNode = visitExpr(_getArgNamed(args, 'title'));
@@ -485,8 +502,14 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
   }
 
   StructuralNode _visitBottomNavigationBar(ArgumentList args) {
-    final classes = _flushBucketWith(
-        ['flex', 'justify-around', 'items-center', 'py-2', 'bg-white', 'border-t']);
+    final classes = _flushBucketWith([
+      'flex',
+      'justify-around',
+      'items-center',
+      'py-2',
+      'bg-white',
+      'border-t'
+    ]);
     return StructuralNode(
       htmlTag: 'nav',
       ownClasses: classes,
@@ -507,7 +530,8 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
   }
 
   StructuralNode _visitCard(ArgumentList args) {
-    final classes = _flushBucketWith(['rounded-lg', 'shadow', 'p-4', 'bg-white']);
+    final classes =
+        _flushBucketWith(['rounded-lg', 'shadow', 'p-4', 'bg-white']);
     final childNode = visitExpr(_getArgNamed(args, 'child'));
     return StructuralNode(
       htmlTag: 'div',
@@ -824,14 +848,19 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
       final vMatch = RegExp(r'vertical:\s*(\d+\.?\d*)').firstMatch(src);
       final h = hMatch != null ? double.parse(hMatch.group(1)!) : 0.0;
       final v = vMatch != null ? double.parse(vMatch.group(1)!) : 0.0;
-      return [TailwindMapper.edgeInsetsSymmetricToPadding(horizontal: h, vertical: v)];
+      return [
+        TailwindMapper.edgeInsetsSymmetricToPadding(horizontal: h, vertical: v)
+      ];
     } else if (src.startsWith('EdgeInsets.only(')) {
       final top = _extractEdgeInsetsPart(src, 'top');
       final right = _extractEdgeInsetsPart(src, 'right');
       final bottom = _extractEdgeInsetsPart(src, 'bottom');
       final left = _extractEdgeInsetsPart(src, 'left');
       final result = TailwindMapper.edgeInsetsOnlyToPadding(
-        top: top, right: right, bottom: bottom, left: left,
+        top: top,
+        right: right,
+        bottom: bottom,
+        left: left,
       );
       return result.isNotEmpty ? result.split(' ') : [];
     }

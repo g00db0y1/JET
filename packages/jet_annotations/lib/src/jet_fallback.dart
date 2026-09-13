@@ -1,8 +1,8 @@
 /// Annotation to provide a fallback Jaspr component string for untranspilable Flutter widgets.
-/// 
+///
 /// The JET AST parser will ignore the body of a widget decorated with this annotation
 /// and instead inject the provided [jasprCode] directly into the output DOM tree.
-/// 
+///
 /// Example:
 /// ```dart
 /// @JetFallback('WebVideoPlayer(url: url)')

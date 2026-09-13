@@ -21,10 +21,12 @@ void main() {
   /// Parses [source], visits it, emits Jaspr source and returns the raw string.
   String emit(String source) {
     final result = parser.parse(source: source, path: 'lib/ui/test.dart');
-    expect(result.isUsable, isTrue, reason: 'Parse failed: ${result.failureMessage}');
+    expect(result.isUsable, isTrue,
+        reason: 'Parse failed: ${result.failureMessage}');
     final visitor = StyleAccumulatorVisitor();
     result.unit!.accept(visitor);
-    expect(visitor.components, isNotEmpty, reason: 'No components found in source');
+    expect(visitor.components, isNotEmpty,
+        reason: 'No components found in source');
     return emitter.emitFile(
       components: visitor.components,
       sourceFile: 'lib/ui/test.dart',
@@ -81,7 +83,8 @@ class Demo extends StatelessWidget {
   @override Widget build(BuildContext context) => Column(children: []);
 }
 ''');
-      expect(output, contains('Iterable<Component> build(BuildContext context) sync*'));
+      expect(output,
+          contains('Iterable<Component> build(BuildContext context) sync*'));
     });
 
     test('build() uses yield for root node', () {
@@ -136,7 +139,8 @@ class _CounterState extends State<Counter> {
   @override Widget build(BuildContext context) => Text('count');
 }
 ''');
-      expect(output, contains('TODO(jet): migrate StatefulWidget state fields here'));
+      expect(output,
+          contains('TODO(jet): migrate StatefulWidget state fields here'));
     });
   });
 
