@@ -91,3 +91,10 @@ Decisions are logged in the format: `[UD|AD]-NNN | Status | Title`
 **Date**: 2026-09-11  
 **Decision**: JET will retain the standard Dart `build_runner` package for ecosystem compatibility, but the primary workflow for in-house testing and speed will be the custom `jet build` CLI which outputs directly to a `.jet_cache` staging directory.  
 **Rationale**: Standard `build_runner` can be slow and relies heavily on workspace caching. The custom AST crawler built into `jet_cli` processes entire codebases in milliseconds. We will maintain both and ensure the `build_runner` builder implementation is brought up to parity before public release, allowing users to choose their preferred workflow.
+
+---
+
+## UD-008 | USED | Multi-Pass Transpilation & Visual Cross-Checking (C2Rust Lessons)
+**Date**: 2026-09-14  
+**Decision**: For Milestone 3 (The Render Expansion), JET will adopt a multi-pass architecture inspired by C2Rust. Pass 1 (The Raw Emitter) prioritizes absolute visual correctness (even if it generates messy, inline absolute positioning). Pass 2 (The Tailwind Optimizer) acts as a refactoring pass to convert raw CSS into idiomatic Tailwind utility classes. Additionally, string-based Golden Tests will be augmented with Visual Cross-Checking (Headless Browser Screenshot Diffing).
+**Rationale**: Trying to map complex Flutter math (Slivers, Stacks, Physics) directly into beautiful, idiomatic Tailwind flexbox in a single pass is fundamentally flawed. Separating visual correctness from code cleanliness makes complex UI transpilation mathematically solvable and vastly easier to debug.
