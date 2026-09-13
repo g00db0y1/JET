@@ -19,17 +19,17 @@ class _PoisonedScreenState extends State<PoisonedScreen> {
 
   @override
   Iterable<Component> build(BuildContext context) sync* {
-    yield div([classes: 'flex flex-col'], [
+    yield div(classes: 'flex flex-col', [
       p([], [
         text('Poisoned'),
       ]),
-      button([classes: 'bg-blue-600 text-white rounded px-4 py-2 hover:bg-blue-700'], [
-        p([], [
-          text('Go to next'),
-        ]),
-      ]),
+      button(
+          classes: 'bg-blue-600 text-white rounded px-4 py-2 hover:bg-blue-700',
+          [
+            p([], [
+              text('Go to next'),
+            ]),
+          ]),
     ]);
   }
 }
-
-

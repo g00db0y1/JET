@@ -11,16 +11,14 @@ class RowWithPaddingDemo extends StatelessComponent {
 
   @override
   Iterable<Component> build(BuildContext context) sync* {
-    yield div([classes: 'px-4 py-2 flex flex-row justify-between items-center'], [
+    yield div(classes: 'px-4 py-2 flex flex-row justify-between items-center', [
       p([], [
         text('Label'),
       ]),
       div([], []),
-      p([classes: 'w-2 flex-1'], [
+      p(classes: 'w-2 flex-1', [
         text('Value'),
       ]),
     ]);
   }
 }
-
-

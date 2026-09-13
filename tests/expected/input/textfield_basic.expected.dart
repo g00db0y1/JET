@@ -19,16 +19,17 @@ class _TextFieldDemoState extends State<TextFieldDemo> {
 
   @override
   Iterable<Component> build(BuildContext context) sync* {
-    yield div([classes: 'p-4 flex flex-col'], [
+    yield div(classes: 'p-4 flex flex-col', [
       input(classes: 'border rounded px-3 py-2 w-full', type: 'text', []),
       div([], []),
-      button([classes: 'h-4 bg-blue-600 text-white rounded px-4 py-2 hover:bg-blue-700'], [
-        p([], [
-          text('Submit'),
-        ]),
-      ]),
+      button(
+          classes:
+              'h-4 bg-blue-600 text-white rounded px-4 py-2 hover:bg-blue-700',
+          [
+            p([], [
+              text('Submit'),
+            ]),
+          ]),
     ]);
   }
 }
-
-

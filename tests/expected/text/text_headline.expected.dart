@@ -11,14 +11,14 @@ class TextHeadlineDemo extends StatelessComponent {
 
   @override
   Iterable<Component> build(BuildContext context) sync* {
-    yield div([classes: 'flex flex-col items-start'], [
-      h1([classes: 'text-4xl font-bold'], [
+    yield div(classes: 'flex flex-col items-start', [
+      h1(classes: 'text-4xl font-bold', [
         text('Page Title'),
       ]),
-      h2([classes: 'text-2xl'], [
+      h2(classes: 'text-2xl', [
         text('Section Heading'),
       ]),
-      h3([classes: 'text-lg'], [
+      h3(classes: 'text-lg', [
         text('Subsection'),
       ]),
       p([], [
@@ -27,5 +27,3 @@ class TextHeadlineDemo extends StatelessComponent {
     ]);
   }
 }
-
-

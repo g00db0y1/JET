@@ -158,7 +158,7 @@ import 'package:jaspr/jaspr.dart';
     // Self-closing elements (no children)
     if (tag == 'hr' || tag == 'img' || tag == 'input') {
       final attrStr = _emitAttributes(node.attributes, classes);
-      return '$tag($attrStr, [])';
+      return '$tag(${attrStr.isNotEmpty ? attrStr : ''})';
     }
 
     // Build the classes argument
@@ -175,7 +175,8 @@ import 'package:jaspr/jaspr.dart';
 
     // Build children
     if (!hasChildren && !hasText) {
-      return '$tag([${attrParts.join(', ')}], [])';
+      final attrsStr = attrParts.isNotEmpty ? '${attrParts.join(', ')}, ' : '';
+      return '$tag($attrsStr[])';
     }
 
     final pad = ' ' * (indent + 2);
@@ -195,9 +196,9 @@ import 'package:jaspr/jaspr.dart';
     }
 
     final childrenStr = childrenParts.join(',\n');
-    final attrsStr = attrParts.isNotEmpty ? '[${attrParts.join(', ')}]' : '[]';
+    final attrsStr = attrParts.isNotEmpty ? '${attrParts.join(', ')}, ' : '';
 
-    return '$tag($attrsStr, [\n$childrenStr,\n$closePad])';
+    return '$tag($attrsStr[\n$childrenStr,\n$closePad])';
   }
 
   String _emitAttributes(Map<String, String> attributes, String classes) {

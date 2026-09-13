@@ -13,22 +13,23 @@ class HomeScreen extends StatelessComponent {
 
   @override
   Iterable<Component> build(BuildContext context) sync* {
-    yield main([classes: 'min-h-screen flex flex-col'], [
-      header([classes: 'flex items-center px-4 py-2 bg-white shadow'], [
-        h1([classes: 'text-xl font-semibold'], [
+    yield main(classes: 'min-h-screen flex flex-col', [
+      header(classes: 'flex items-center px-4 py-2 bg-white shadow', [
+        h1(classes: 'text-xl font-semibold', [
           text('Home'),
         ]),
       ]),
-      div([classes: 'flex items-center justify-center flex flex-col justify-center'], [
-        p([], [
-          text('Welcome!'),
-        ]),
-        p([], [
-          text('Build for web and mobile.'),
-        ]),
-      ]),
+      div(
+          classes:
+              'flex items-center justify-center flex flex-col justify-center',
+          [
+            p([], [
+              text('Welcome!'),
+            ]),
+            p([], [
+              text('Build for web and mobile.'),
+            ]),
+          ]),
     ]);
   }
 }
-
-

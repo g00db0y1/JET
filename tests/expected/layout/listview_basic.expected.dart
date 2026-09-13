@@ -11,24 +11,22 @@ class ListViewDemo extends StatelessComponent {
 
   @override
   Iterable<Component> build(BuildContext context) sync* {
-    yield ul([classes: 'flex flex-col'], [
+    yield ul(classes: 'flex flex-col', [
       li([], [
-        p([classes: 'p-2'], [
+        p(classes: 'p-2', [
           text('Item One'),
         ]),
       ]),
       li([], [
-        p([classes: 'p-2'], [
+        p(classes: 'p-2', [
           text('Item Two'),
         ]),
       ]),
       li([], [
-        p([classes: 'p-2'], [
+        p(classes: 'p-2', [
           text('Item Three'),
         ]),
       ]),
     ]);
   }
 }
-
-

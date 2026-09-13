@@ -11,7 +11,7 @@ class ColumnBasicDemo extends StatelessComponent {
 
   @override
   Iterable<Component> build(BuildContext context) sync* {
-    yield div([classes: 'p-4 flex flex-col justify-start'], [
+    yield div(classes: 'p-4 flex flex-col justify-start', [
       p([], [
         text('Hello World'),
       ]),
@@ -21,5 +21,3 @@ class ColumnBasicDemo extends StatelessComponent {
     ]);
   }
 }
-
-
