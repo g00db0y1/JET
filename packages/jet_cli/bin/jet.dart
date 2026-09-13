@@ -25,13 +25,16 @@ void main(List<String> args) async {
     ..addCommand('build')
     ..addCommand(
       'preview',
-      ArgParser()..addOption('line', abbr: 'l', help: 'Preview a specific line or widget'),
+      ArgParser()
+        ..addOption('line',
+            abbr: 'l', help: 'Preview a specific line or widget'),
     )
     ..addCommand('lint')
     ..addCommand('serve')
     ..addCommand('clean')
     ..addFlag('help', abbr: 'h', negatable: false, help: 'Show this help.')
-    ..addFlag('version', abbr: 'v', negatable: false, help: 'Show JET version.');
+    ..addFlag('version',
+        abbr: 'v', negatable: false, help: 'Show JET version.');
 
   final results = parser.parse(args);
 
@@ -60,10 +63,11 @@ void main(List<String> args) async {
     case 'preview':
       final restArgs = command.rest;
       if (restArgs.isEmpty) {
-        print('[JET] ❌ Please specify a file to preview. Example: jet preview lib/ui/home.dart');
+        print(
+            '[JET] ❌ Please specify a file to preview. Example: jet preview lib/ui/home.dart');
         exit(1);
       }
-      
+
       int? lineNumber;
       final lineArg = command['line'] as String?;
       if (lineArg != null) {
@@ -124,24 +128,32 @@ Then run: jet build
 }
 
 Future<void> _runBuildAll() async {
-  print('[JET] 🚀 Starting lightning-fast AST build...');
+  print('[JET] 🚀 Starting 3-Step Disk-Backed Compiler Pipeline...');
   final stopwatch = Stopwatch()..start();
 
   final sourceDirs = ['lib/ui', 'lib/screens', 'lib/widgets'];
-  final cacheDir = Directory('.jet_cache');
-  if (!cacheDir.existsSync()) {
-    cacheDir.createSync(recursive: true);
-  }
+  final rawCacheDir = Directory(p.join('.jet_cache', 'raw'));
+  final optCacheDir = Directory(p.join('.jet_cache', 'optimized'));
+
+  if (!rawCacheDir.existsSync()) rawCacheDir.createSync(recursive: true);
+  if (!optCacheDir.existsSync()) optCacheDir.createSync(recursive: true);
 
   int fileCount = 0;
   int componentCount = 0;
 
+  // =========================================================================
+  // STEP 1: The Raw Emitter (Speed)
+  // Parses Flutter AST and writes unoptimized code to .jet_cache/raw/
+  // =========================================================================
+  print('[JET] ⚡ STEP 1: Generating Raw AST (Speed)...');
   for (final dirPath in sourceDirs) {
     final dir = Directory(dirPath);
     if (!dir.existsSync()) continue;
 
     for (final entity in dir.listSync(recursive: true)) {
-      if (entity is File && entity.path.endsWith('.dart') && !entity.path.endsWith('.jaspr.dart')) {
+      if (entity is File &&
+          entity.path.endsWith('.dart') &&
+          !entity.path.endsWith('.jaspr.dart')) {
         final source = entity.readAsStringSync();
         final parser = FlutterAstParser();
         final parseResult = parser.parse(source: source, path: entity.path);
@@ -154,17 +166,17 @@ Future<void> _runBuildAll() async {
         if (visitor.components.isEmpty) continue;
 
         final emitter = JasprEmitter();
-        final jasprCode = emitter.emitFile(
+        // Currently, JasprEmitter emits string. In the future, this will emit the IR.
+        final rawJasprCode = emitter.emitFile(
           components: visitor.components,
           sourceFile: entity.path,
           version: '0.1.0-dev',
         );
 
-        // Write to cache using target label (.jaspr.dart)
         final basename = p.basename(entity.path);
         final targetName = basename.replaceFirst('.dart', '.jaspr.dart');
-        final cacheFile = File(p.join(cacheDir.path, targetName));
-        cacheFile.writeAsStringSync(jasprCode);
+        final rawCacheFile = File(p.join(rawCacheDir.path, targetName));
+        rawCacheFile.writeAsStringSync(rawJasprCode);
 
         fileCount++;
         componentCount += visitor.components.length;
@@ -172,59 +184,90 @@ Future<void> _runBuildAll() async {
     }
   }
 
-  stopwatch.stop();
   if (fileCount == 0) {
-    print('[JET] ⚠️ No Flutter UI files found in lib/ui, lib/screens, or lib/widgets.');
+    print(
+        '[JET] ⚠️ No Flutter UI files found in lib/ui, lib/screens, or lib/widgets.');
     return;
-  } 
+  }
 
-  print('[JET] ✅ Cache build complete in ${stopwatch.elapsedMilliseconds}ms.');
-  print('[JET] 📂 Transpiled $componentCount components across $fileCount files to .jet_cache/');
-  
-  // M8.5: Atomic Sync
-  _syncCacheToTargets(cacheDir);
-}
-
-void _syncCacheToTargets(Directory cacheDir) {
-  print('[JET] 🔄 Synchronizing .jet_cache to target environments...');
-  
-  // For demonstration/default, we assume the Jaspr web app is located at '../website'
-  // In a production release, this would be read from a jet.yaml config file.
-  final jasprTargetDir = Directory(p.join('..', 'website', 'lib', 'ui'));
-  final flutterTargetDir = Directory(p.join('..', 'mobile', 'lib', 'ui')); // For future 2-way transpilation
-  
-  int syncCount = 0;
-
-  for (final entity in cacheDir.listSync()) {
+  // =========================================================================
+  // STEP 2: The Tailwind Optimizer (Accuracy)
+  // Reads from .jet_cache/raw/ and optimizes CSS to Tailwind, saving to .jet_cache/optimized/
+  // =========================================================================
+  print('[JET] 🛠️ STEP 2: Running Tailwind Optimizer (Accuracy)...');
+  for (final entity in rawCacheDir.listSync()) {
     if (entity is! File) continue;
     final filename = p.basename(entity.path);
 
-    // Skip preview files
-    if (filename.startsWith('preview@')) continue;
-
     if (filename.endsWith('.jaspr.dart')) {
-      if (!jasprTargetDir.existsSync()) {
-        jasprTargetDir.createSync(recursive: true);
-      }
-      // Drop the .jaspr label when moving to the final destination
-      final finalName = filename.replaceFirst('.jaspr.dart', '.dart');
-      final targetFile = File(p.join(jasprTargetDir.path, finalName));
-      entity.copySync(targetFile.path);
-      syncCount++;
-    } 
-    else if (filename.endsWith('.flutter.dart')) {
-      if (!flutterTargetDir.existsSync()) {
-        flutterTargetDir.createSync(recursive: true);
-      }
-      // Drop the .flutter label when moving to the final destination
-      final finalName = filename.replaceFirst('.flutter.dart', '.dart');
-      final targetFile = File(p.join(flutterTargetDir.path, finalName));
-      entity.copySync(targetFile.path);
-      syncCount++;
+      final rawCode = entity.readAsStringSync();
+
+      // TODO (Phase 1): Implement TailwindTreeShaker logic here.
+      // For now, it acts as a pass-through until we hook up csslib.
+      final optimizedCode = rawCode;
+
+      final optCacheFile = File(p.join(optCacheDir.path, filename));
+      optCacheFile.writeAsStringSync(optimizedCode);
     }
   }
 
-  print('[JET] ✅ Successfully synced $syncCount files to their native environments.');
+  // =========================================================================
+  // STEP 3: Poison Sniffer & Promotion (Safety)
+  // Reads from .jet_cache/optimized/, verifies it, and promotes to target
+  // =========================================================================
+  _runPoisonSnifferAndPromote(optCacheDir);
+
+  stopwatch.stop();
+  print(
+      '[JET] ✅ 3-Step Pipeline complete in ${stopwatch.elapsedMilliseconds}ms.');
+  print(
+      '[JET] 📂 Transpiled $componentCount components across $fileCount files.');
+}
+
+void _runPoisonSnifferAndPromote(Directory optCacheDir) {
+  print('[JET] 🛡️ STEP 3: Running Poison Sniffer & Promoting to Targets...');
+
+  // Target environment (would normally be in jet.yaml)
+  final jasprTargetDir = Directory(p.join('..', 'website', 'lib', 'ui'));
+
+  int promotedCount = 0;
+  int poisonedCount = 0;
+
+  for (final entity in optCacheDir.listSync()) {
+    if (entity is! File) continue;
+    final filename = p.basename(entity.path);
+
+    if (filename.endsWith('.jaspr.dart')) {
+      final optimizedCode = entity.readAsStringSync();
+
+      // Simple Poison Sniffing on the generated file:
+      // Prevent mobile-only plugins from reaching the web target.
+      final isPoisoned = optimizedCode.contains('import \'dart:io\'') ||
+          optimizedCode.contains('stripe_payment');
+
+      if (isPoisoned) {
+        print(
+            '[JET] ☠️  POISON DETECTED in $filename. File blocked from promotion.');
+        poisonedCount++;
+        continue;
+      }
+
+      // Green-lighted! Promote to target and drop the .jaspr label.
+      if (!jasprTargetDir.existsSync()) {
+        jasprTargetDir.createSync(recursive: true);
+      }
+
+      final finalName = filename.replaceFirst('.jaspr.dart', '.dart');
+      final targetFile = File(p.join(jasprTargetDir.path, finalName));
+      targetFile.writeAsStringSync(optimizedCode);
+      promotedCount++;
+    }
+  }
+
+  print('[JET] ✅ Successfully promoted $promotedCount files to web safely.');
+  if (poisonedCount > 0) {
+    print('[JET] ⚠️ Blocked $poisonedCount poisoned files.');
+  }
 }
 
 Future<void> _runBuildSingle(String filePath) async {
