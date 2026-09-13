@@ -8,6 +8,7 @@ import 'package:jet_cli/src/preview_command.dart';
 import 'package:jet_builder/src/parser/flutter_ast_parser.dart';
 import 'package:jet_builder/src/visitor/style_accumulator_visitor.dart';
 import 'package:jet_builder/src/emitter/jaspr_emitter.dart';
+import 'package:jet_builder/src/optimizer/tailwind_optimizer.dart';
 
 /// JET CLI — Developer convenience tool for the JET transpiler.
 ///
@@ -202,9 +203,8 @@ Future<void> _runBuildAll() async {
     if (filename.endsWith('.jaspr.dart')) {
       final rawCode = entity.readAsStringSync();
 
-      // TODO (Phase 1): Implement TailwindTreeShaker logic here.
-      // For now, it acts as a pass-through until we hook up csslib.
-      final optimizedCode = rawCode;
+      final optimizer = TailwindOptimizer();
+      final optimizedCode = optimizer.optimize(rawCode);
 
       final optCacheFile = File(p.join(optCacheDir.path, filename));
       optCacheFile.writeAsStringSync(optimizedCode);
