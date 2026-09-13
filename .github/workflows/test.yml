@@ -1,0 +1,43 @@
+name: JET CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup Dart
+      uses: dart-lang/setup-dart@v1
+      
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        channel: 'stable'
+
+    - name: Install Jaspr CLI
+      run: dart pub global activate jaspr_cli
+
+    - name: Install Dependencies (jet_builder)
+      run: cd packages/jet_builder && dart pub get
+      
+    - name: Install Dependencies (jet_cli)
+      run: cd packages/jet_cli && dart pub get
+
+    - name: Install Dependencies (Tests)
+      run: cd tests/jet_builder_test && dart pub get
+
+    - name: Run Tests (AST Parser, Optimizer, Code Emitter)
+      run: cd tests/jet_builder_test && dart test
+      
+    # Future step: The Visual Cross-Checking test will run here
+    # It will use Puppeteer to boot the Flutter App and Jaspr App and diff them.
+    # - name: Run Puppeteer Visual Cross-Check
+    #   run: cd tests/jet_builder_test && dart test test/visual_cross_check_test.dart
+
