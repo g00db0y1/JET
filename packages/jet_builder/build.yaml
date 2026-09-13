@@ -4,7 +4,7 @@ builders:
     builder_factories: ["jetBuilder"]
     build_extensions: {".dart": [".jaspr.dart"]}
     auto_apply: dependents
-    build_to: source
+    build_to: cache
     defaults:
       generate_for:
         - lib/ui/**

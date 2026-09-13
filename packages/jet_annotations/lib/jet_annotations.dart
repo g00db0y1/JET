@@ -21,3 +21,4 @@ library jet_annotations;
 
 export 'src/web_hints.dart';
 export 'src/jet_route.dart';
+export 'src/jet_fallback.dart';
