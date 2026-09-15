@@ -403,10 +403,20 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
     // In Flutter, SliverList usually takes a delegate. For AST parsing we'll extract delegate children if possible.
     final delegateExpr = _getArgNamed(args, 'delegate');
     List<WidgetNode> children = [];
-    if (delegateExpr is InstanceCreationExpression) {
-      if (delegateExpr.constructorName.type.name2.lexeme ==
-          'SliverChildListDelegate') {
-        final delegateArgs = delegateExpr.argumentList.arguments;
+    if (delegateExpr is InstanceCreationExpression ||
+        delegateExpr is MethodInvocation) {
+      String delegateName = '';
+      NodeList<Expression>? delegateArgs;
+
+      if (delegateExpr is InstanceCreationExpression) {
+        delegateName = delegateExpr.constructorName.type.name2.lexeme;
+        delegateArgs = delegateExpr.argumentList.arguments;
+      } else if (delegateExpr is MethodInvocation) {
+        delegateName = delegateExpr.methodName.name;
+        delegateArgs = delegateExpr.argumentList.arguments;
+      }
+
+      if (delegateName == 'SliverChildListDelegate' && delegateArgs != null) {
         if (delegateArgs.isNotEmpty) {
           final firstArg = delegateArgs.first;
           if (firstArg is ListLiteral) {
