@@ -543,7 +543,7 @@ class Demo extends StatelessWidget {
   // ────────────────────────────────────────────────────────────────────────
   // Phase 2: Gestures
   // ────────────────────────────────────────────────────────────────────────
-  
+
   group('Phase 2: Complex Gestures', () {
     test('GestureDetector accumulates click and pointer events on child', () {
       final components = transpile('''
@@ -565,7 +565,8 @@ class Demo extends StatelessWidget {
       expect(child.ownClasses, contains('cursor-pointer'));
       expect(child.events, containsPair('click', 'onTap'));
       expect(child.events, containsPair('dblclick', 'onDoubleTap'));
-      expect(child.events, containsPair('pointermove', 'onPanUpdate / onScaleUpdate'));
+      expect(child.events,
+          containsPair('pointermove', 'onPanUpdate / onScaleUpdate'));
       // Event bindings promote the component to @client
       expect(components.first.isStateful, isTrue);
     });

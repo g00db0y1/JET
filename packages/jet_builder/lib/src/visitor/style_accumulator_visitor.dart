@@ -229,8 +229,8 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
     };
 
     return StructuralNode(
-        events: _popEvents(),
-        htmlTag: tag,
+      events: targetNode.events,
+      htmlTag: tag,
       ownClasses: [...targetNode.ownClasses, ...extraClasses],
       accumulatedClasses: targetNode.accumulatedClasses,
       children: targetNode.children,
@@ -287,7 +287,6 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
     return visitExpr(child);
   }
 
-
   WidgetNode? _visitGestureDetector(ArgumentList args) {
     final tap = _getArgNamed(args, 'onTap');
     if (tap != null) {
@@ -296,10 +295,14 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
     }
     final doubleTap = _getArgNamed(args, 'onDoubleTap');
     if (doubleTap != null) _eventBucket['dblclick'] = 'onDoubleTap';
-    final panStart = _getArgNamed(args, 'onPanStart') ?? _getArgNamed(args, 'onScaleStart');
-    if (panStart != null) _eventBucket['pointerdown'] = 'onPanStart / onScaleStart';
-    final panUpdate = _getArgNamed(args, 'onPanUpdate') ?? _getArgNamed(args, 'onScaleUpdate');
-    if (panUpdate != null) _eventBucket['pointermove'] = 'onPanUpdate / onScaleUpdate';
+    final panStart =
+        _getArgNamed(args, 'onPanStart') ?? _getArgNamed(args, 'onScaleStart');
+    if (panStart != null)
+      _eventBucket['pointerdown'] = 'onPanStart / onScaleStart';
+    final panUpdate = _getArgNamed(args, 'onPanUpdate') ??
+        _getArgNamed(args, 'onScaleUpdate');
+    if (panUpdate != null)
+      _eventBucket['pointermove'] = 'onPanUpdate / onScaleUpdate';
     final child = _getArgNamed(args, 'child');
     return visitExpr(child);
   }
@@ -324,8 +327,8 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
     _applyMainAxis(args, classes);
     _applyCrossAxis(args, classes);
     return StructuralNode(
-        events: _events,
-        htmlTag: 'div',
+      events: _events,
+      htmlTag: 'div',
       ownClasses: classes,
       children: _visitChildrenList(args),
     );
@@ -337,8 +340,8 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
     _applyMainAxis(args, classes);
     _applyCrossAxis(args, classes);
     return StructuralNode(
-        events: _events,
-        htmlTag: 'div',
+      events: _events,
+      htmlTag: 'div',
       ownClasses: classes,
       children: _visitChildrenList(args),
     );
@@ -348,8 +351,8 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
     final _events = _popEvents();
     final classes = _flushBucketWith(['flex', 'flex-wrap']);
     return StructuralNode(
-        events: _events,
-        htmlTag: 'div',
+      events: _events,
+      htmlTag: 'div',
       ownClasses: classes,
       children: _visitChildrenList(args),
     );
@@ -359,8 +362,8 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
     final _events = _popEvents();
     final classes = _flushBucketWith(['relative']);
     return StructuralNode(
-        events: _events,
-        htmlTag: 'div',
+      events: _events,
+      htmlTag: 'div',
       ownClasses: classes,
       children: _visitChildrenList(args),
     );
@@ -371,8 +374,8 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
     final classes = _flushBucketWith(['flex', 'flex-col', 'overflow-y-auto']);
     _applyPhysics(args, classes);
     return StructuralNode(
-        events: _events,
-        htmlTag: 'ul',
+      events: _events,
+      htmlTag: 'ul',
       ownClasses: classes,
       children: _visitChildrenListWrapped(args, wrapTag: 'li'),
     );
@@ -382,8 +385,8 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
     final _events = _popEvents();
     final classes = _flushBucketWith(['flex', 'flex-col', 'overflow-y-auto']);
     return StructuralNode(
-        events: _events,
-        htmlTag: 'ul',
+      events: _events,
+      htmlTag: 'ul',
       ownClasses: classes,
       children: [
         const UnknownNode(originalWidgetName: 'ListView.builder:itemBuilder')
@@ -397,6 +400,7 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
     final isHorizontal =
         directionExpr?.toSource().contains('horizontal') ?? false;
 
+    final _events = _popEvents();
     final classes = _flushBucketWith([
       'flex',
       isHorizontal ? 'flex-row' : 'flex-col',
@@ -408,8 +412,8 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
     final child = visitExpr(_getArgNamed(args, 'child'));
 
     return StructuralNode(
-        events: _popEvents(),
-        htmlTag: 'div',
+      events: _events,
+      htmlTag: 'div',
       ownClasses: classes,
       children: child != null ? [child] : [],
     );
@@ -432,8 +436,8 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
     }
 
     return StructuralNode(
-        events: _events,
-        htmlTag: 'div',
+      events: _events,
+      htmlTag: 'div',
       ownClasses: classes,
       children: slivers,
     );
@@ -480,8 +484,8 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
     }
 
     return StructuralNode(
-        events: _popEvents(),
-        htmlTag: 'ul',
+      events: _events,
+      htmlTag: 'ul',
       ownClasses: classes,
       children: children,
     );
@@ -492,8 +496,8 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
     final _events = _popEvents();
     final classes = _flushBucketWith([]);
     return StructuralNode(
-        events: _events,
-        htmlTag: 'div',
+      events: _events,
+      htmlTag: 'div',
       ownClasses: classes,
       children: child != null ? [child] : [],
     );
@@ -501,14 +505,15 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
 
   StructuralNode _visitSliverAppBar(ArgumentList args) {
     // A SliverAppBar typically becomes a sticky header
+    final _events = _popEvents();
     final classes =
         _flushBucketWith(['sticky', 'top-0', 'z-50', 'bg-white', 'shadow']);
 
     final titleNode = visitExpr(_getArgNamed(args, 'title'));
 
     return StructuralNode(
-        events: _popEvents(),
-        htmlTag: 'header',
+      events: _events,
+      htmlTag: 'header',
       ownClasses: classes,
       children: titleNode != null ? [titleNode] : [],
     );
@@ -521,8 +526,8 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
     final _events = _popEvents();
     final classes = _flushBucketWith(['grid', 'grid-cols-$count', 'gap-4']);
     return StructuralNode(
-        events: _events,
-        htmlTag: 'div',
+      events: _events,
+      htmlTag: 'div',
       ownClasses: classes,
       children: _visitChildrenList(args),
     );
@@ -543,14 +548,15 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
     if (navNode != null) children.add(navNode);
 
     return StructuralNode(
-        events: _events,
-        htmlTag: 'main',
+      events: _events,
+      htmlTag: 'main',
       ownClasses: classes,
       children: children,
     );
   }
 
   StructuralNode _visitAppBar(ArgumentList args) {
+    final _events = _popEvents();
     final classes = _flushBucketWith(
         ['flex', 'items-center', 'px-4', 'py-2', 'bg-white', 'shadow']);
     final children = <WidgetNode>[];
@@ -559,7 +565,7 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
     // Promote Text child of AppBar title to h1
     if (titleNode is StructuralNode && titleNode.htmlTag == 'p') {
       titleNode = StructuralNode(
-        events: _popEvents(),
+        events: _events,
         htmlTag: 'h1',
         ownClasses: ['text-xl', 'font-semibold'],
         children: titleNode.children,
@@ -570,14 +576,15 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
     if (titleNode != null) children.add(titleNode);
 
     return StructuralNode(
-        events: _popEvents(),
-        htmlTag: 'header',
+      events: _events,
+      htmlTag: 'header',
       ownClasses: classes,
       children: children,
     );
   }
 
   StructuralNode _visitBottomNavigationBar(ArgumentList args) {
+    final _events = _popEvents();
     final classes = _flushBucketWith([
       'flex',
       'justify-around',
@@ -587,8 +594,8 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
       'border-t'
     ]);
     return StructuralNode(
-        events: _popEvents(),
-        htmlTag: 'nav',
+      events: _events,
+      htmlTag: 'nav',
       ownClasses: classes,
       children: _visitChildrenList(args),
     );
@@ -601,20 +608,21 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
     if (colorExpr != null) classes.add('bg-gray-100');
     final childNode = visitExpr(_getArgNamed(args, 'child'));
     return StructuralNode(
-        events: _events,
-        htmlTag: 'div',
+      events: _events,
+      htmlTag: 'div',
       ownClasses: classes,
       children: childNode != null ? [childNode] : [],
     );
   }
 
   StructuralNode _visitCard(ArgumentList args) {
+    final _events = _popEvents();
     final classes =
         _flushBucketWith(['rounded-lg', 'shadow', 'p-4', 'bg-white']);
     final childNode = visitExpr(_getArgNamed(args, 'child'));
     return StructuralNode(
-        events: _popEvents(),
-        htmlTag: 'div',
+      events: _events,
+      htmlTag: 'div',
       ownClasses: classes,
       children: childNode != null ? [childNode] : [],
     );
@@ -647,8 +655,8 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
     _bucket.clear();
 
     return StructuralNode(
-        events: _events,
-        htmlTag: htmlTag,
+      events: _events,
+      htmlTag: htmlTag,
       ownClasses: ownClasses,
       accumulatedClasses: accumulatedClasses,
       children: [],
@@ -661,8 +669,8 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
     final accumulatedClasses = List<String>.from(_bucket);
     _bucket.clear();
     return StructuralNode(
-        events: _events,
-        htmlTag: 'p',
+      events: _events,
+      htmlTag: 'p',
       ownClasses: [],
       accumulatedClasses: accumulatedClasses,
       children: [const UnknownNode(originalWidgetName: 'RichText:TextSpan')],
@@ -680,8 +688,8 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
     final accumulatedClasses = List<String>.from(_bucket);
     _bucket.clear();
     return StructuralNode(
-        events: _events,
-        htmlTag: 'img',
+      events: _events,
+      htmlTag: 'img',
       ownClasses: [],
       accumulatedClasses: accumulatedClasses,
       children: [],
@@ -696,8 +704,8 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
     final accumulatedClasses = List<String>.from(_bucket);
     _bucket.clear();
     return StructuralNode(
-        events: _events,
-        htmlTag: 'img',
+      events: _events,
+      htmlTag: 'img',
       ownClasses: [],
       accumulatedClasses: accumulatedClasses,
       children: [],
@@ -717,8 +725,8 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
     final accumulatedClasses = List<String>.from(_bucket);
     _bucket.clear();
     return StructuralNode(
-        events: _events,
-        htmlTag: 'span',
+      events: _events,
+      htmlTag: 'span',
       ownClasses: ['icon', 'icon-$iconName'],
       accumulatedClasses: accumulatedClasses,
       children: [],
@@ -735,8 +743,8 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
     _bucket.clear();
     final childNode = visitExpr(_getArgNamed(args, 'child'));
     return StructuralNode(
-        events: _events,
-        htmlTag: 'button',
+      events: _events,
+      htmlTag: 'button',
       ownClasses: buttonClasses.split(' '),
       accumulatedClasses: accumulatedClasses,
       children: childNode != null ? [childNode] : [],
@@ -836,8 +844,8 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
     }
 
     return StructuralNode(
-        events: _popEvents(),
-        htmlTag: isTextArea ? 'textarea' : 'input',
+      events: _events,
+      htmlTag: isTextArea ? 'textarea' : 'input',
       ownClasses: ['border', 'rounded', 'px-3', 'py-2', 'w-full'],
       accumulatedClasses: accumulatedClasses,
       children: [], // Inputs are self-closing, textarea children injected elsewhere if needed
@@ -854,8 +862,8 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
     final childNode = visitExpr(_getArgNamed(args, 'child'));
 
     return StructuralNode(
-        events: _events,
-        htmlTag: 'form',
+      events: _events,
+      htmlTag: 'form',
       ownClasses: [],
       accumulatedClasses: accumulatedClasses,
       children: childNode != null ? [childNode] : [],
@@ -868,8 +876,8 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
     final accumulatedClasses = List<String>.from(_bucket);
     _bucket.clear();
     return StructuralNode(
-        events: _events,
-        htmlTag: 'input',
+      events: _events,
+      htmlTag: 'input',
       ownClasses: ['rounded'],
       accumulatedClasses: accumulatedClasses,
       children: [],
@@ -883,8 +891,8 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
     final accumulatedClasses = List<String>.from(_bucket);
     _bucket.clear();
     return StructuralNode(
-        events: _events,
-        htmlTag: 'input',
+      events: _events,
+      htmlTag: 'input',
       ownClasses: ['toggle'],
       accumulatedClasses: accumulatedClasses,
       children: [],
@@ -902,8 +910,8 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
     final accumulatedClasses = List<String>.from(_bucket);
     _bucket.clear();
     return StructuralNode(
-        events: _events,
-        htmlTag: 'hr',
+      events: _events,
+      htmlTag: 'hr',
       ownClasses: ['border-t', 'border-gray-200', 'my-2'],
       accumulatedClasses: accumulatedClasses,
       children: [],
@@ -915,8 +923,8 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
     final accumulatedClasses = List<String>.from(_bucket);
     _bucket.clear();
     return StructuralNode(
-        events: _events,
-        htmlTag: 'div',
+      events: _events,
+      htmlTag: 'div',
       ownClasses: ['flex-1'],
       accumulatedClasses: accumulatedClasses,
       children: [],
@@ -928,8 +936,8 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
     final accumulatedClasses = List<String>.from(_bucket);
     _bucket.clear();
     return StructuralNode(
-        events: _events,
-        htmlTag: 'div',
+      events: _events,
+      htmlTag: 'div',
       ownClasses: [
         'animate-spin',
         'rounded-full',
@@ -949,8 +957,8 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
     final accumulatedClasses = List<String>.from(_bucket);
     _bucket.clear();
     return StructuralNode(
-        events: _events,
-        htmlTag: 'div',
+      events: _events,
+      htmlTag: 'div',
       ownClasses: ['animate-pulse', 'h-1', 'bg-blue-600', 'w-full', 'rounded'],
       accumulatedClasses: accumulatedClasses,
       children: [],
