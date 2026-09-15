@@ -377,7 +377,7 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
   StructuralNode _visitCustomScrollView(ArgumentList args) {
     final classes = _flushBucketWith(['flex', 'flex-col', 'overflow-y-auto']);
     _applyPhysics(args, classes);
-    
+
     // CustomScrollView uses 'slivers' instead of 'children'
     final sliversExpr = _getArgNamed(args, 'slivers');
     List<WidgetNode> slivers = [];
@@ -388,7 +388,7 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
           .whereType<WidgetNode>()
           .toList();
     }
-    
+
     return StructuralNode(
       htmlTag: 'div',
       ownClasses: classes,
