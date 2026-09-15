@@ -2,7 +2,7 @@
 // ignore_for_file: type=lint
 // Source: ../../tests/corpus/layout/row_with_padding.dart
 // JET version: test-golden
-// Generated at: 2026-09-15T22:18:38.811605
+// Generated at: 2026-09-16T02:40:05.498573
 
 import 'package:jaspr/jaspr.dart';
 

@@ -2,7 +2,7 @@
 // ignore_for_file: type=lint
 // Source: ../../tests/corpus/interactive/stateful_counter.dart
 // JET version: test-golden
-// Generated at: 2026-09-15T22:18:38.653750
+// Generated at: 2026-09-16T02:40:05.480307
 
 import 'package:jaspr/jaspr.dart';
 
