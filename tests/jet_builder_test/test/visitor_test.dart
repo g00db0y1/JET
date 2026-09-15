@@ -466,4 +466,77 @@ class Demo extends StatelessWidget {
       expect(adapter.children, hasLength(1));
     });
   });
+
+  // ────────────────────────────────────────────────────────────────────────
+  // Phase 2: Forms and Inputs
+  // ────────────────────────────────────────────────────────────────────────
+
+  group('Phase 2: Forms and Inputs', () {
+    test('Form maps to semantic HTML <form>', () {
+      final components = transpile('''
+import 'package:flutter/widgets.dart';
+class Demo extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Form(
+      child: Container(),
+    );
+  }
+}
+''');
+      final form = components.first.buildBody as StructuralNode;
+      expect(form.htmlTag, equals('form'));
+      expect(form.needsClientAnnotation, isTrue);
+      expect(form.children, hasLength(1));
+    });
+
+    test('TextFormField maps correctly with keyboard type and obscure text',
+        () {
+      final components = transpile('''
+import 'package:flutter/widgets.dart';
+class Demo extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      obscureText: true,
+      keyboardType: TextInputType.emailAddress,
+      maxLength: 50,
+      initialValue: 'test@example.com',
+      decoration: InputDecoration(
+        labelText: 'Email Address',
+        hintText: 'Enter email'
+      ),
+    );
+  }
+}
+''');
+      final input = components.first.buildBody as StructuralNode;
+      expect(input.htmlTag, equals('input'));
+      expect(input.attributes['type'],
+          equals('password')); // obscureText overrides email
+      expect(input.attributes['maxlength'], equals('50'));
+      expect(input.attributes['value'], equals('test@example.com'));
+      expect(input.attributes['placeholder'], equals('Enter email'));
+      expect(input.needsClientAnnotation, isTrue);
+    });
+
+    test('TextFormField maps to textarea when maxLines > 1', () {
+      final components = transpile('''
+import 'package:flutter/widgets.dart';
+class Demo extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      maxLines: 4,
+    );
+  }
+}
+''');
+      final input = components.first.buildBody as StructuralNode;
+      expect(input.htmlTag, equals('textarea'));
+      expect(input.attributes['rows'], equals('4'));
+      expect(input.attributes.containsKey('type'), isFalse);
+      expect(input.attributes.containsKey('value'), isFalse);
+    });
+  });
 }

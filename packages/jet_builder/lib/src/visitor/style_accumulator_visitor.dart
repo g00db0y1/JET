@@ -174,7 +174,7 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
       'TextButton' => _visitButton(args, 'text-blue-600 hover:underline'),
       'OutlinedButton' => _visitButton(
           args, 'border border-blue-600 text-blue-600 rounded px-4 py-2'),
-      'TextField' || 'TextFormField' => _visitTextField(),
+      'TextField' || 'TextFormField' => _visitTextField(args),
       'Form' => _visitForm(args),
       'Checkbox' => _visitCheckbox(),
       'Switch' => _visitSwitch(),
@@ -674,15 +674,102 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
     );
   }
 
-  StructuralNode _visitTextField() {
+  StructuralNode _visitTextField(ArgumentList args) {
     final accumulatedClasses = List<String>.from(_bucket);
     _bucket.clear();
+
+    final attrs = <String, String>{};
+
+    // Parse keyboardType
+    final keyboardExpr = _getArgNamed(args, 'keyboardType');
+    if (keyboardExpr is PropertyAccess) {
+      final name = keyboardExpr.propertyName.name;
+      if (name == 'emailAddress')
+        attrs['type'] = 'email';
+      else if (name == 'number' || name == 'numberWithOptions')
+        attrs['type'] = 'number';
+      else if (name == 'phone')
+        attrs['type'] = 'tel';
+      else if (name == 'url')
+        attrs['type'] = 'url';
+      else
+        attrs['type'] = 'text';
+    } else if (keyboardExpr is PrefixedIdentifier) {
+      final name = keyboardExpr.identifier.name;
+      if (name == 'emailAddress')
+        attrs['type'] = 'email';
+      else if (name == 'number' || name == 'numberWithOptions')
+        attrs['type'] = 'number';
+      else if (name == 'phone')
+        attrs['type'] = 'tel';
+      else if (name == 'url')
+        attrs['type'] = 'url';
+      else
+        attrs['type'] = 'text';
+    } else {
+      attrs['type'] = 'text';
+    }
+
+    // Parse obscureText
+    final obscureExpr = _getArgNamed(args, 'obscureText');
+    if (obscureExpr is BooleanLiteral && obscureExpr.value) {
+      attrs['type'] = 'password';
+    }
+
+    // Parse maxLength
+    final maxLenExpr = _getArgNamed(args, 'maxLength');
+    if (maxLenExpr is IntegerLiteral) {
+      attrs['maxlength'] = maxLenExpr.value.toString();
+    }
+
+    // Parse initialValue (for TextFormField)
+    final initialExpr = _getArgNamed(args, 'initialValue');
+    if (initialExpr is StringLiteral) {
+      attrs['value'] = initialExpr.stringValue ?? '';
+    }
+
+    // Parse decoration for hintText/labelText
+    final decorationExpr = _getArgNamed(args, 'decoration');
+    ArgumentList? decorArgs;
+    if (decorationExpr is InstanceCreationExpression) {
+      decorArgs = decorationExpr.argumentList;
+    } else if (decorationExpr is MethodInvocation) {
+      decorArgs = decorationExpr.argumentList;
+    }
+
+    if (decorArgs != null) {
+      final hintExpr = _getArgNamed(decorArgs, 'hintText');
+      if (hintExpr is StringLiteral && hintExpr.stringValue != null) {
+        attrs['placeholder'] = hintExpr.stringValue!;
+      }
+
+      final labelExpr = _getArgNamed(decorArgs, 'labelText');
+      if (labelExpr is StringLiteral &&
+          labelExpr.stringValue != null &&
+          !attrs.containsKey('placeholder')) {
+        attrs['placeholder'] = labelExpr
+            .stringValue!; // Fallback label to placeholder for simple inputs
+      }
+    }
+
+    // Parse maxLines
+    final maxLinesExpr = _getArgNamed(args, 'maxLines');
+    bool isTextArea = false;
+    if (maxLinesExpr is IntegerLiteral &&
+        maxLinesExpr.value != null &&
+        maxLinesExpr.value! > 1) {
+      isTextArea = true;
+      attrs['rows'] = maxLinesExpr.value.toString();
+      attrs.remove('type');
+      attrs.remove('value'); // textareas put content inside tags
+    }
+
     return StructuralNode(
-      htmlTag: 'input',
+      htmlTag: isTextArea ? 'textarea' : 'input',
       ownClasses: ['border', 'rounded', 'px-3', 'py-2', 'w-full'],
       accumulatedClasses: accumulatedClasses,
-      children: [],
-      attributes: {'type': 'text'},
+      children: [], // Inputs are self-closing, textarea children injected elsewhere if needed
+      attributes: attrs,
       needsClientAnnotation: true,
     );
   }
@@ -690,13 +777,15 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
   StructuralNode _visitForm(ArgumentList args) {
     final accumulatedClasses = List<String>.from(_bucket);
     _bucket.clear();
+
     final childNode = visitExpr(_getArgNamed(args, 'child'));
+
     return StructuralNode(
       htmlTag: 'form',
       ownClasses: [],
       accumulatedClasses: accumulatedClasses,
       children: childNode != null ? [childNode] : [],
-      needsClientAnnotation: true,
+      needsClientAnnotation: true, // Forms have state
     );
   }
 
