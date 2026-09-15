@@ -44,7 +44,7 @@ void main() {
         final emitter = JasprEmitter();
         final rawGeneratedCode = emitter.emitFile(
           components: visitor.components,
-          sourceFile: file.path,
+          sourceFile: file.path.replaceAll(r'\', '/'),
           version: 'test-golden', // Hardcoded version for deterministic tests
         );
 
