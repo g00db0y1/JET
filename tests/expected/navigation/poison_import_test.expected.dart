@@ -2,7 +2,7 @@
 // ignore_for_file: type=lint
 // Source: ../../tests/corpus/navigation/poison_import_test.dart
 // JET version: test-golden
-// Generated at: 2026-09-16T02:40:05.504572
+// Generated at: 2026-09-16T03:01:44.269837
 
 import 'package:jaspr/jaspr.dart';
 

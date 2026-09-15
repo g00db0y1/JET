@@ -539,4 +539,35 @@ class Demo extends StatelessWidget {
       expect(input.attributes.containsKey('value'), isFalse);
     });
   });
+
+  // ────────────────────────────────────────────────────────────────────────
+  // Phase 2: Gestures
+  // ────────────────────────────────────────────────────────────────────────
+  
+  group('Phase 2: Complex Gestures', () {
+    test('GestureDetector accumulates click and pointer events on child', () {
+      final components = transpile('''
+import 'package:flutter/widgets.dart';
+class Demo extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => print('tap'),
+      onDoubleTap: () => print('double'),
+      onPanUpdate: (d) => print('pan'),
+      child: Container(),
+    );
+  }
+}
+''');
+      final child = components.first.buildBody as StructuralNode;
+      expect(child.htmlTag, equals('div'));
+      expect(child.ownClasses, contains('cursor-pointer'));
+      expect(child.events, containsPair('click', 'onTap'));
+      expect(child.events, containsPair('dblclick', 'onDoubleTap'));
+      expect(child.events, containsPair('pointermove', 'onPanUpdate / onScaleUpdate'));
+      // Event bindings promote the component to @client
+      expect(components.first.isStateful, isTrue);
+    });
+  });
 }

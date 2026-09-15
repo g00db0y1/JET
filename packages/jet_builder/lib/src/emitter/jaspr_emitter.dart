@@ -157,7 +157,7 @@ import 'package:jaspr/jaspr.dart';
 
     // Self-closing elements (no children)
     if (tag == 'hr' || tag == 'img' || tag == 'input') {
-      final attrStr = _emitAttributes(node.attributes, classes);
+      final attrStr = _emitAttributes(node.attributes, classes, node.events, indent);
       return '$tag(${attrStr.isNotEmpty ? attrStr : ''})';
     }
 
@@ -171,6 +171,11 @@ import 'package:jaspr/jaspr.dart';
       if (entry.key != 'class') {
         attrParts.add("${_attrToParam(entry.key)}: '${entry.value}'");
       }
+    }
+    
+    // Build events
+    if (node.events.isNotEmpty) {
+      attrParts.add(_emitEvents(node.events, indent));
     }
 
     // Build children
@@ -201,13 +206,25 @@ import 'package:jaspr/jaspr.dart';
     return '$tag($attrsStr[\n$childrenStr,\n$closePad])';
   }
 
-  String _emitAttributes(Map<String, String> attributes, String classes) {
+  String _emitAttributes(Map<String, String> attributes, String classes, Map<String, String> events, int indent) {
     final parts = <String>[];
     if (classes.isNotEmpty) parts.add("classes: '$classes'");
     for (final entry in attributes.entries) {
       parts.add("${_attrToParam(entry.key)}: '${entry.value}'");
     }
+    if (events.isNotEmpty) {
+      parts.add(_emitEvents(events, indent));
+    }
     return parts.join(', ');
+  }
+
+  String _emitEvents(Map<String, String> events, int indent) {
+    final pad = ' ' * (indent + 4);
+    final parts = <String>[];
+    for (final entry in events.entries) {
+      parts.add("\n$pad'${entry.key}': (e) { /* TODO(jet): manual port — ${entry.value} */ }");
+    }
+    return "events: {${parts.join(',')}\n${' ' * (indent + 2)}}";
   }
 
   /// Converts HTML attribute names to Jaspr named parameter names.

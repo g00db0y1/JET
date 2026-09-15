@@ -2,7 +2,7 @@
 // ignore_for_file: type=lint
 // Source: ../../tests/corpus/layout/column_basic.dart
 // JET version: test-golden
-// Generated at: 2026-09-16T02:40:05.485307
+// Generated at: 2026-09-16T03:01:44.256833
 
 import 'package:jaspr/jaspr.dart';
 

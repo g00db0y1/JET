@@ -49,6 +49,7 @@ class StructuralNode extends WidgetNode {
     required this.children,
     this.accumulatedClasses = const [],
     this.attributes = const {},
+    this.events = const {},
     this.textContent,
     this.needsClientAnnotation = false,
   });
@@ -67,6 +68,9 @@ class StructuralNode extends WidgetNode {
 
   /// Additional HTML attributes (e.g., `{'src': 'https://...', 'alt': '...'}`).
   final Map<String, String> attributes;
+
+  /// DOM events accumulated from GestureDetectors (e.g. `{'click': 'onTap'}`).
+  final Map<String, String> events;
 
   /// Text content for leaf text nodes (e.g., `Text('Hello')` → `textContent: 'Hello'`).
   final String? textContent;
