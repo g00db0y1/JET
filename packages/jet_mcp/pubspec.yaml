@@ -1,7 +1,7 @@
 name: jet_mcp
 description: Model Context Protocol (MCP) server for JET. Equips AI agents with transpilation, linting, and documentation tools.
 version: 0.1.0-dev
-publish_to: none
+repository: https://github.com/g00db0y1/JET
 
 environment:
   sdk: ^3.6.0

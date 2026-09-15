@@ -4,7 +4,7 @@ description: >-
   `jet serve`, and `jet clean` commands.
   Install with: dart pub global activate jet_cli
 version: 0.1.0-dev
-publish_to: none
+repository: https://github.com/g00db0y1/JET
 
 environment:
   sdk: ^3.6.0

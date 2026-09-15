@@ -4,7 +4,7 @@ description: >-
   Provides the .asWeb() extension and @JetRoute annotation.
   Zero runtime overhead on mobile — all hints are consumed at build time.
 version: 0.1.0-dev
-publish_to: none
+repository: https://github.com/g00db0y1/JET
 
 environment:
   sdk: ^3.6.0
