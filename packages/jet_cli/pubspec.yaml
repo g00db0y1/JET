@@ -14,7 +14,7 @@ dependencies:
   args: ^2.5.0
   path: ^1.9.0
   process_run: ^1.2.0
-  jet_builder: any
+  jet_builder: ^0.1.0-dev
 
 executables:
   jet: jet

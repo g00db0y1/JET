@@ -8,7 +8,7 @@ environment:
 resolution: workspace
 
 dependencies:
-  jet_builder: any
+  jet_builder: ^0.1.0-dev
   # Using standard dart:convert and dart:io for JSON-RPC over stdio
 
 executables:

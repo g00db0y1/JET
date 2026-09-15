@@ -20,7 +20,7 @@ dependencies:
   collection: ^1.18.0
   csslib: ^1.0.2
   html: ^0.15.7
-  jet_annotations: any
+  jet_annotations: ^0.1.0-dev
 
 dev_dependencies:
   build_test: ^2.2.0
