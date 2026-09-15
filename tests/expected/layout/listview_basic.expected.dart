@@ -2,7 +2,7 @@
 // ignore_for_file: type=lint
 // Source: ../../tests/corpus\layout\listview_basic.dart
 // JET version: test-golden
-// Generated at: 2026-09-12T20:38:42.225714
+// Generated at: 2026-09-15T22:18:38.764365
 
 import 'package:jaspr/jaspr.dart';
 
@@ -11,21 +11,15 @@ class ListViewDemo extends StatelessComponent {
 
   @override
   Iterable<Component> build(BuildContext context) sync* {
-    yield ul(classes: 'flex flex-col', [
-      li([], [
-        p(classes: 'p-2', [
-          text('Item One'),
-        ]),
+    yield ul(classes: 'flex flex-col overflow-y-auto', [
+      li([
+        p(classes: 'p-2', [text('Item One')]),
       ]),
-      li([], [
-        p(classes: 'p-2', [
-          text('Item Two'),
-        ]),
+      li([
+        p(classes: 'p-2', [text('Item Two')]),
       ]),
-      li([], [
-        p(classes: 'p-2', [
-          text('Item Three'),
-        ]),
+      li([
+        p(classes: 'p-2', [text('Item Three')]),
       ]),
     ]);
   }

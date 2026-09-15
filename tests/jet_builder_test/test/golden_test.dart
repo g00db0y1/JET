@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
+import 'package:dart_style/dart_style.dart';
 
 import 'package:jet_builder/src/parser/flutter_ast_parser.dart';
 import 'package:jet_builder/src/visitor/style_accumulator_visitor.dart';
@@ -41,11 +42,13 @@ void main() {
         result.unit!.accept(visitor);
 
         final emitter = JasprEmitter();
-        final generatedCode = emitter.emitFile(
+        final rawGeneratedCode = emitter.emitFile(
           components: visitor.components,
           sourceFile: file.path,
           version: 'test-golden', // Hardcoded version for deterministic tests
         );
+
+        final generatedCode = DartFormatter(languageVersion: DartFormatter.latestLanguageVersion).format(rawGeneratedCode);
 
         final expectedFile = File(p.join(
           expectedDir.path,
@@ -61,12 +64,18 @@ void main() {
           // Compare against existing golden file
           final expectedCode = expectedFile.readAsStringSync();
 
-          final normalizedGenerated = generatedCode.replaceAll('\r\n', '\n');
-          final normalizedExpected = expectedCode.replaceAll('\r\n', '\n');
+          // Strip timestamps and normalize line endings for deterministic comparison
+          final generatedNoTime = generatedCode
+              .replaceAll(RegExp(r'// Generated at: .*\n'), '')
+              .replaceAll('\r\n', '\n');
+              
+          final expectedNoTime = expectedCode
+              .replaceAll(RegExp(r'// Generated at: .*\n'), '')
+              .replaceAll('\r\n', '\n');
 
           expect(
-            normalizedGenerated,
-            equals(normalizedExpected),
+            generatedNoTime,
+            equals(expectedNoTime),
             reason:
                 'Generated Jaspr code does not match the golden file for $relativePath.',
           );

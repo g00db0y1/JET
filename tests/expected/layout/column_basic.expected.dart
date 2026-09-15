@@ -2,7 +2,7 @@
 // ignore_for_file: type=lint
 // Source: ../../tests/corpus\layout\column_basic.dart
 // JET version: test-golden
-// Generated at: 2026-09-12T20:38:42.153967
+// Generated at: 2026-09-15T22:18:38.688821
 
 import 'package:jaspr/jaspr.dart';
 
@@ -12,12 +12,8 @@ class ColumnBasicDemo extends StatelessComponent {
   @override
   Iterable<Component> build(BuildContext context) sync* {
     yield div(classes: 'p-4 flex flex-col justify-start', [
-      p([], [
-        text('Hello World'),
-      ]),
-      p([], [
-        text('From Flutter'),
-      ]),
+      p([text('Hello World')]),
+      p([text('From Flutter')]),
     ]);
   }
 }

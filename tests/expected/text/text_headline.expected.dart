@@ -2,7 +2,7 @@
 // ignore_for_file: type=lint
 // Source: ../../tests/corpus\text\text_headline.dart
 // JET version: test-golden
-// Generated at: 2026-09-12T20:38:42.575669
+// Generated at: 2026-09-15T22:18:38.993533
 
 import 'package:jaspr/jaspr.dart';
 
@@ -12,18 +12,10 @@ class TextHeadlineDemo extends StatelessComponent {
   @override
   Iterable<Component> build(BuildContext context) sync* {
     yield div(classes: 'flex flex-col items-start', [
-      h1(classes: 'text-4xl font-bold', [
-        text('Page Title'),
-      ]),
-      h2(classes: 'text-2xl', [
-        text('Section Heading'),
-      ]),
-      h3(classes: 'text-lg', [
-        text('Subsection'),
-      ]),
-      p([], [
-        text('Regular paragraph text goes here.'),
-      ]),
+      h1(classes: 'text-4xl font-bold', [text('Page Title')]),
+      h2(classes: 'text-2xl', [text('Section Heading')]),
+      h3(classes: 'text-lg', [text('Subsection')]),
+      p([text('Regular paragraph text goes here.')]),
     ]);
   }
 }

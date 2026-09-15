@@ -2,7 +2,7 @@
 // ignore_for_file: type=lint
 // Source: ../../tests/corpus\layout\row_with_padding.dart
 // JET version: test-golden
-// Generated at: 2026-09-12T20:38:42.283176
+// Generated at: 2026-09-15T22:18:38.811605
 
 import 'package:jaspr/jaspr.dart';
 
@@ -12,13 +12,9 @@ class RowWithPaddingDemo extends StatelessComponent {
   @override
   Iterable<Component> build(BuildContext context) sync* {
     yield div(classes: 'px-4 py-2 flex flex-row justify-between items-center', [
-      p([], [
-        text('Label'),
-      ]),
-      div([], []),
-      p(classes: 'w-2 flex-1', [
-        text('Value'),
-      ]),
+      p([text('Label')]),
+      div([]),
+      p(classes: 'w-2 flex-1', [text('Value')]),
     ]);
   }
 }

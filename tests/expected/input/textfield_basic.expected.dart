@@ -2,7 +2,7 @@
 // ignore_for_file: type=lint
 // Source: ../../tests/corpus\input\textfield_basic.dart
 // JET version: test-golden
-// Generated at: 2026-09-12T20:38:41.927649
+// Generated at: 2026-09-15T22:18:38.268538
 
 import 'package:jaspr/jaspr.dart';
 
@@ -20,16 +20,15 @@ class _TextFieldDemoState extends State<TextFieldDemo> {
   @override
   Iterable<Component> build(BuildContext context) sync* {
     yield div(classes: 'p-4 flex flex-col', [
-      input(classes: 'border rounded px-3 py-2 w-full', type: 'text', []),
-      div([], []),
+      input(classes: 'border rounded px-3 py-2 w-full', type: 'text'),
+      div([]),
       button(
-          classes:
-              'h-4 bg-blue-600 text-white rounded px-4 py-2 hover:bg-blue-700',
-          [
-            p([], [
-              text('Submit'),
-            ]),
-          ]),
+        classes:
+            'h-4 bg-blue-600 text-white rounded px-4 py-2 hover:bg-blue-700',
+        [
+          p([text('Submit')]),
+        ],
+      ),
     ]);
   }
 }

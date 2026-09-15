@@ -2,7 +2,7 @@
 // ignore_for_file: type=lint
 // Source: ../../tests/corpus\layout\scaffold_appbar.dart
 // JET version: test-golden
-// Generated at: 2026-09-12T20:38:42.361834
+// Generated at: 2026-09-15T22:18:38.868379
 
 import 'package:jaspr/jaspr.dart';
 
@@ -15,21 +15,16 @@ class HomeScreen extends StatelessComponent {
   Iterable<Component> build(BuildContext context) sync* {
     yield main(classes: 'min-h-screen flex flex-col', [
       header(classes: 'flex items-center px-4 py-2 bg-white shadow', [
-        h1(classes: 'text-xl font-semibold', [
-          text('Home'),
-        ]),
+        h1(classes: 'text-xl font-semibold', [text('Home')]),
       ]),
       div(
-          classes:
-              'flex items-center justify-center flex flex-col justify-center',
-          [
-            p([], [
-              text('Welcome!'),
-            ]),
-            p([], [
-              text('Build for web and mobile.'),
-            ]),
-          ]),
+        classes:
+            'flex items-center justify-center flex flex-col justify-center',
+        [
+          p([text('Welcome!')]),
+          p([text('Build for web and mobile.')]),
+        ],
+      ),
     ]);
   }
 }

@@ -2,7 +2,7 @@
 // ignore_for_file: type=lint
 // Source: ../../tests/corpus\navigation\poison_import_test.dart
 // JET version: test-golden
-// Generated at: 2026-09-12T20:38:42.449159
+// Generated at: 2026-09-15T22:18:38.942408
 
 import 'package:jaspr/jaspr.dart';
 
@@ -20,16 +20,13 @@ class _PoisonedScreenState extends State<PoisonedScreen> {
   @override
   Iterable<Component> build(BuildContext context) sync* {
     yield div(classes: 'flex flex-col', [
-      p([], [
-        text('Poisoned'),
-      ]),
+      p([text('Poisoned')]),
       button(
-          classes: 'bg-blue-600 text-white rounded px-4 py-2 hover:bg-blue-700',
-          [
-            p([], [
-              text('Go to next'),
-            ]),
-          ]),
+        classes: 'bg-blue-600 text-white rounded px-4 py-2 hover:bg-blue-700',
+        [
+          p([text('Go to next')]),
+        ],
+      ),
     ]);
   }
 }

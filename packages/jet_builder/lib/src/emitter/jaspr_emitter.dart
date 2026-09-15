@@ -125,7 +125,7 @@ import 'package:jaspr/jaspr.dart';
       final body = _emitNode(component.buildBody!, indent: 4);
       buffer.writeln('    yield $body;');
     } else {
-      buffer.writeln('    yield div([], []);');
+      buffer.writeln('    yield div([]);');
     }
 
     buffer.writeln('  }');
