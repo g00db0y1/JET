@@ -1,0 +1,53 @@
+name: Wiki Sync
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync-wiki:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Checkout Wiki
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository }}.wiki
+          path: .wiki
+          token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      - name: Sync Docs to Wiki
+        run: |
+          if [ ! -d ".wiki/.git" ]; then
+            echo "Wiki repository not found! Please manually create the first Wiki page on GitHub to initialize it."
+            exit 1
+          fi
+
+          echo "Removing old wiki files..."
+          find .wiki -mindepth 1 -maxdepth 1 -not -name '.git' -exec rm -rf {} +
+          
+          echo "Copying new docs..."
+          cp -R docs/* .wiki/
+          
+      - name: Commit and Push
+        working-directory: .wiki
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add .
+          if ! git diff-index --quiet HEAD; then
+            git commit -m "docs: sync wiki from main repository"
+            git push
+          else
+            echo "No changes to wiki."
+          fi
