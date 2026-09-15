@@ -8,3 +8,5 @@ workspace:
   - packages/jet_cli
   - packages/jet_mcp
   - tests/jet_builder_test
+dev_dependencies:
+  husky: ^0.1.7

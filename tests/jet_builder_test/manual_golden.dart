@@ -1,4 +1,3 @@
-
 import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:dart_style/dart_style.dart';
@@ -24,13 +23,15 @@ void main() {
     final visitor = StyleAccumulatorVisitor();
     result.unit!.accept(visitor);
     final emitter = JasprEmitter();
-    final generatedCode = DartFormatter(languageVersion: DartFormatter.latestLanguageVersion).format(emitter.emitFile(
+    final generatedCode =
+        DartFormatter(languageVersion: DartFormatter.latestLanguageVersion)
+            .format(emitter.emitFile(
       components: visitor.components,
       sourceFile: file.path,
       version: 'test-golden',
     ));
     final expectedFile = File(p.join(
-      expectedDir.path, 
+      expectedDir.path,
       relativePath.replaceFirst('.dart', '.expected.dart'),
     ));
     expectedFile.parent.createSync(recursive: true);
@@ -38,4 +39,3 @@ void main() {
     print('Updated ' + relativePath);
   }
 }
-

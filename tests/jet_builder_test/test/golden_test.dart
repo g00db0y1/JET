@@ -48,7 +48,9 @@ void main() {
           version: 'test-golden', // Hardcoded version for deterministic tests
         );
 
-        final generatedCode = DartFormatter(languageVersion: DartFormatter.latestLanguageVersion).format(rawGeneratedCode);
+        final generatedCode =
+            DartFormatter(languageVersion: DartFormatter.latestLanguageVersion)
+                .format(rawGeneratedCode);
 
         final expectedFile = File(p.join(
           expectedDir.path,
@@ -68,7 +70,7 @@ void main() {
           final generatedNoTime = generatedCode
               .replaceAll(RegExp(r'// Generated at: .*\n'), '')
               .replaceAll('\r\n', '\n');
-              
+
           final expectedNoTime = expectedCode
               .replaceAll(RegExp(r'// Generated at: .*\n'), '')
               .replaceAll('\r\n', '\n');
