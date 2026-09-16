@@ -571,4 +571,51 @@ class Demo extends StatelessWidget {
       expect(components.first.isStateful, isTrue);
     });
   });
+
+  // ────────────────────────────────────────────────────────────────────────
+  // Phase 2: Animations
+  // ────────────────────────────────────────────────────────────────────────
+
+  group('Phase 2: Animations', () {
+    test('AnimatedContainer translates to CSS transitions', () {
+      final components = transpile('''
+import 'package:flutter/widgets.dart';
+class Demo extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeOut,
+      child: Container(),
+    );
+  }
+}
+''');
+      final child = components.first.buildBody as StructuralNode;
+      expect(child.ownClasses,
+          containsAll(['transition-all', 'duration-500', 'ease-out']));
+    });
+
+    test('AnimatedOpacity translates to CSS opacity and transition', () {
+      final components = transpile('''
+import 'package:flutter/widgets.dart';
+class Demo extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedOpacity(
+      opacity: 0.5,
+      duration: const Duration(milliseconds: 300),
+      child: Text('Fade'),
+    );
+  }
+}
+''');
+      final child = components.first.buildBody as StructuralNode;
+      expect(child.htmlTag, equals('p'));
+      expect(
+          child.accumulatedClasses,
+          containsAll(
+              ['opacity-50', 'transition-all', 'duration-300', 'ease-in-out']));
+    });
+  });
 }

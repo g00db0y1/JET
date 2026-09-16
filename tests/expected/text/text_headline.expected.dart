@@ -2,7 +2,7 @@
 // ignore_for_file: type=lint
 // Source: ../../tests/corpus/text/text_headline.dart
 // JET version: test-golden
-// Generated at: 2026-09-16T03:01:44.272832
+// Generated at: 2026-09-16T23:37:25.381466
 
 import 'package:jaspr/jaspr.dart';
 

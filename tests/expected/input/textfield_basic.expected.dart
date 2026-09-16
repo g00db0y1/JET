@@ -2,7 +2,7 @@
 // ignore_for_file: type=lint
 // Source: ../../tests/corpus/input/textfield_basic.dart
 // JET version: test-golden
-// Generated at: 2026-09-16T03:01:44.212832
+// Generated at: 2026-09-16T23:37:25.047038
 
 import 'package:jaspr/jaspr.dart';
 

@@ -150,6 +150,12 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
       'InkWell' => _visitGestureDetector(args),
       'Flexible' => _visitFlexible(args),
       'Align' => _visitAlign(args),
+      'Opacity' => _visitOpacity(args),
+      'AnimatedContainer' => _visitAnimatedWidget(args, 'AnimatedContainer'),
+      'AnimatedPadding' => _visitAnimatedWidget(args, 'AnimatedPadding'),
+      'AnimatedOpacity' => _visitAnimatedWidget(args, 'AnimatedOpacity'),
+      'AnimatedAlign' => _visitAnimatedWidget(args, 'AnimatedAlign'),
+      'AnimatedPositioned' => _visitAnimatedWidget(args, 'AnimatedPositioned'),
 
       // ── Layout Structural Nodes ──────────────────────────────────────────
       'Column' => _visitColumn(args),
@@ -305,6 +311,106 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
       _eventBucket['pointermove'] = 'onPanUpdate / onScaleUpdate';
     final child = _getArgNamed(args, 'child');
     return visitExpr(child);
+  }
+
+  WidgetNode? _visitOpacity(ArgumentList args) {
+    final opacityExpr = _getArgNamed(args, 'opacity');
+    if (opacityExpr != null) {
+      final val = _parseDouble(opacityExpr);
+      if (val != null) {
+        final intOp = (val * 100).round();
+        final tailwindOps = [
+          0,
+          5,
+          10,
+          20,
+          25,
+          30,
+          40,
+          50,
+          60,
+          70,
+          75,
+          80,
+          90,
+          95,
+          100
+        ];
+        final closest = tailwindOps
+            .reduce((a, b) => (a - intOp).abs() < (b - intOp).abs() ? a : b);
+        _bucket.add('opacity-$closest');
+      }
+    }
+    return visitExpr(_getArgNamed(args, 'child'));
+  }
+
+  WidgetNode? _visitAnimatedWidget(ArgumentList args, String widgetType) {
+    // Extract duration
+    final durationExpr = _getArgNamed(args, 'duration');
+    int? ms;
+    if (durationExpr is InstanceCreationExpression &&
+        durationExpr.constructorName.type.name2.lexeme == 'Duration') {
+      final msArg = _getArgNamed(durationExpr.argumentList, 'milliseconds');
+      if (msArg != null) ms = _parseInt(msArg);
+    }
+    ms ??= 300;
+
+    final tailwindDurations = [75, 100, 150, 200, 300, 500, 700, 1000];
+    final closestMs = tailwindDurations
+        .reduce((a, b) => (a - ms!).abs() < (b - ms!).abs() ? a : b);
+
+    // Extract curve
+    final curveExpr = _getArgNamed(args, 'curve');
+    String easeClass = 'ease-in-out';
+    if (curveExpr is PropertyAccess &&
+        curveExpr.target?.toSource() == 'Curves') {
+      final curveName = curveExpr.propertyName.name;
+      easeClass = switch (curveName) {
+        'linear' => 'ease-linear',
+        'easeIn' => 'ease-in',
+        'easeOut' => 'ease-out',
+        'easeInOut' => 'ease-in-out',
+        _ => 'ease-in-out',
+      };
+    } else if (curveExpr is PrefixedIdentifier &&
+        curveExpr.prefix.name == 'Curves') {
+      final curveName = curveExpr.identifier.name;
+      easeClass = switch (curveName) {
+        'linear' => 'ease-linear',
+        'easeIn' => 'ease-in',
+        'easeOut' => 'ease-out',
+        'easeInOut' => 'ease-in-out',
+        _ => 'ease-in-out',
+      };
+    }
+
+    _bucket.addAll(['transition-all', 'duration-$closestMs', easeClass]);
+
+    return switch (widgetType) {
+      'AnimatedContainer' => _visitContainer(args),
+      'AnimatedPadding' => _visitPadding(args),
+      'AnimatedOpacity' => _visitOpacity(args),
+      'AnimatedAlign' => _visitAlign(args),
+      'Positioned' => _visitPositioned(args),
+      'AnimatedPositioned' => _visitPositioned(args),
+      _ => visitExpr(_getArgNamed(args, 'child')),
+    };
+  }
+
+  WidgetNode? _visitPositioned(ArgumentList args) {
+    final top = _getArgNamed(args, 'top');
+    final bottom = _getArgNamed(args, 'bottom');
+    final left = _getArgNamed(args, 'left');
+    final right = _getArgNamed(args, 'right');
+    _bucket.add('absolute');
+    if (top != null)
+      _bucket
+          .add('top-0'); // Note: we'd map pixels, but keeping it simple for now
+    if (bottom != null) _bucket.add('bottom-0');
+    if (left != null) _bucket.add('left-0');
+    if (right != null) _bucket.add('right-0');
+
+    return visitExpr(_getArgNamed(args, 'child'));
   }
 
   WidgetNode? _visitAlign(ArgumentList args) {
