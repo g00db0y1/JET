@@ -30,6 +30,40 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
   /// All top-level [ComponentNode]s found in the parsed file.
   final List<ComponentNode> components = [];
 
+  @override
+  void visitTopLevelVariableDeclaration(TopLevelVariableDeclaration node) {
+    for (final variable in node.variables.variables) {
+      final initializer = variable.initializer;
+      String? constructorName;
+      ArgumentList? argumentList;
+
+      if (initializer is InstanceCreationExpression) {
+        constructorName = initializer.constructorName.type.name2.lexeme;
+        argumentList = initializer.argumentList;
+      } else if (initializer is MethodInvocation) {
+        constructorName = initializer.methodName.name;
+        argumentList = initializer.argumentList;
+      }
+
+      if (constructorName == 'GoRouter' && argumentList != null) {
+        final name = variable.name.lexeme;
+        final className =
+            name.substring(0, 1).toUpperCase() + name.substring(1);
+
+        final bodyNode =
+            _dispatchWidgetCreation('GoRouter', null, argumentList);
+        if (bodyNode != null) {
+          components.add(ComponentNode(
+            name: className,
+            isStateful: false,
+            buildBody: bodyNode,
+          ));
+        }
+      }
+    }
+    super.visitTopLevelVariableDeclaration(node);
+  }
+
   /// Current accumulated CSS bucket (modifier classes waiting for a structural node).
   final List<String> _bucket = [];
 
@@ -48,12 +82,16 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
   @override
   void visitClassDeclaration(ClassDeclaration node) {
     final superclass = node.extendsClause?.superclass.name2.lexeme;
-    if (superclass != 'StatelessWidget' && superclass != 'StatefulWidget') {
+    if (superclass != 'StatelessWidget' &&
+        superclass != 'StatefulWidget' &&
+        superclass != 'ConsumerWidget' &&
+        superclass != 'ConsumerStatefulWidget') {
       super.visitClassDeclaration(node);
       return;
     }
 
-    final isStateful = superclass == 'StatefulWidget';
+    final isStateful = superclass == 'StatefulWidget' ||
+        superclass == 'ConsumerStatefulWidget';
     final className = node.name.lexeme;
 
     // Check for @JetRoute annotation
@@ -66,9 +104,10 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
 
     // Find the build() method to extract the widget tree
     WidgetNode? buildBody;
+    List<String> buildStatements = [];
     for (final member in node.members) {
       if (member is MethodDeclaration && member.name.lexeme == 'build') {
-        buildBody = _visitBuildMethod(member);
+        buildBody = _visitBuildMethod(member, buildStatements);
       }
     }
 
@@ -79,6 +118,7 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
       name: className,
       isStateful: needsClient,
       buildBody: buildBody,
+      buildStatements: buildStatements,
       routeMetadata: routeMetadata,
     );
     components.add(component);
@@ -201,6 +241,7 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
       'CircularProgressIndicator' => _visitCircularProgress(),
       'LinearProgressIndicator' => _visitLinearProgress(),
       'Icon' => _visitIcon(args),
+      'GoRouter' => _visitGoRouter(args),
 
       // ── Unsupported Nodes ───────────────────────────────────────────────
       _ => UnknownNode(originalWidgetName: typeName),
@@ -822,20 +863,23 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
     );
   }
 
-  StructuralNode _visitIcon(ArgumentList args) {
+  EcosystemNode _visitGoRouter(ArgumentList args) {
+    var rawCode = args.toSource();
+    rawCode = rawCode.replaceAll('GoRoute(', 'Route(');
+    return EcosystemNode(
+      package: 'jaspr_router',
+      code: 'Router$rawCode',
+    );
+  }
+
+  EcosystemNode _visitIcon(ArgumentList args) {
     final iconExpr = args.arguments.firstOrNull;
     final iconName = iconExpr != null
-        ? iconExpr.toSource().replaceAll('Icons.', '').replaceAll('_', '-')
+        ? iconExpr.toSource().replaceAll('Icons.', '')
         : 'unknown';
-    final _events = _popEvents();
-    final accumulatedClasses = List<String>.from(_bucket);
-    _bucket.clear();
-    return StructuralNode(
-      events: _events,
-      htmlTag: 'span',
-      ownClasses: ['icon', 'icon-$iconName'],
-      accumulatedClasses: accumulatedClasses,
-      children: [],
+    return EcosystemNode(
+      package: 'jaspr_lucide',
+      code: 'LucideIcon(LucideIcons.$iconName)',
     );
   }
 
@@ -1075,8 +1119,28 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
   // Private helpers
   // ───────────────────────────────────────────────────────────────────────────
 
-  WidgetNode? _visitBuildMethod(MethodDeclaration method) {
-    // Find the first return statement expression in build()
+  WidgetNode? _visitBuildMethod(
+      MethodDeclaration method, List<String> buildStatements) {
+    if (method.body is BlockFunctionBody) {
+      final body = method.body as BlockFunctionBody;
+      for (final stmt in body.block.statements) {
+        if (stmt is ReturnStatement) {
+          if (stmt.expression != null) {
+            return visitExpr(stmt.expression!);
+          }
+        } else {
+          String stmtSource = stmt.toSource();
+          stmtSource = stmtSource.replaceAll('ref.watch', 'context.watch');
+          stmtSource = stmtSource.replaceAll('ref.read', 'context.read');
+          buildStatements.add(stmtSource);
+        }
+      }
+    } else if (method.body is ExpressionFunctionBody) {
+      final body = method.body as ExpressionFunctionBody;
+      return visitExpr(body.expression);
+    }
+
+    // Fallback if no clean block statements are found
     final finder = _ReturnExpressionFinder();
     method.body.accept(finder);
     return visitExpr(finder.returnExpression);

@@ -617,5 +617,38 @@ class Demo extends StatelessWidget {
           containsAll(
               ['opacity-50', 'transition-all', 'duration-300', 'ease-in-out']));
     });
+
+    test('go_router maps to jaspr_router', () {
+      final source = '''
+import 'package:go_router/go_router.dart';
+import 'package:flutter/material.dart';
+
+final router = GoRouter(
+  routes: [
+    GoRoute(
+      path: '/',
+      builder: (context, state) => const Home(),
+    ),
+  ],
+);
+''';
+
+      final visitor = StyleAccumulatorVisitor();
+      final parser = FlutterAstParser();
+      final result = parser.parse(source: source, path: 'test.dart');
+      result.unit!.accept(visitor);
+      final components = visitor.components;
+
+      expect(components.length, 1);
+      final component = components.first;
+
+      expect(component.name, 'Router');
+
+      final body = component.buildBody as EcosystemNode;
+      expect(body.package, 'jaspr_router');
+      expect(body.code.contains('Router('), isTrue);
+      expect(body.code.contains('Route('), isTrue);
+      expect(body.code.contains('GoRoute('), isFalse);
+    });
   });
 }

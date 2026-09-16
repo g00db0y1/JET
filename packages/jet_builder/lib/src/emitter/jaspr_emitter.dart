@@ -45,6 +45,23 @@ import 'package:jaspr/jaspr.dart';
         .replaceAll('{version}', version)
         .replaceAll('{timestamp}', DateTime.now().toIso8601String()));
 
+    final usesRiverpod = components.any((c) => c.buildStatements.any((stmt) =>
+        stmt.contains('context.watch') || stmt.contains('context.read')));
+
+    final ecosystemPackages = <String>{};
+    for (final c in components) {
+      if (c.buildBody != null) {
+        _collectEcosystemPackages(c.buildBody!, ecosystemPackages);
+      }
+    }
+
+    if (usesRiverpod) {
+      buffer.writeln("import 'package:jaspr_riverpod/jaspr_riverpod.dart';");
+    }
+    for (final pkg in ecosystemPackages) {
+      buffer.writeln("import 'package:$pkg/$pkg.dart';");
+    }
+
     for (final component in components) {
       buffer.writeln(emitComponent(component));
       buffer.writeln();
@@ -140,6 +157,7 @@ import 'package:jaspr/jaspr.dart';
   /// Recursively emits a [WidgetNode] as a Jaspr function call string.
   String _emitNode(WidgetNode node, {int indent = 0}) {
     return switch (node) {
+      EcosystemNode(:final code) => code,
       StructuralNode() => _emitStructural(node, indent: indent),
       ComponentNode() => '${node.name}()',
       UnknownNode(:final originalWidgetName) =>
@@ -245,4 +263,14 @@ import 'package:jaspr/jaspr.dart';
             (m) => m.group(1)!.toUpperCase(),
           ),
       };
+
+  void _collectEcosystemPackages(WidgetNode node, Set<String> packages) {
+    if (node is EcosystemNode) {
+      packages.add(node.package);
+    } else if (node is StructuralNode) {
+      for (final child in node.children) {
+        _collectEcosystemPackages(child, packages);
+      }
+    }
+  }
 }

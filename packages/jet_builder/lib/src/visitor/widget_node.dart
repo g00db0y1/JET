@@ -100,6 +100,7 @@ class ComponentNode extends WidgetNode {
     required this.name,
     required this.isStateful,
     required this.buildBody,
+    this.buildStatements = const [],
     this.routeMetadata,
     this.constructorParams = const [],
   });
@@ -113,6 +114,9 @@ class ComponentNode extends WidgetNode {
 
   /// The root node returned by the Flutter `build()` method.
   final WidgetNode? buildBody;
+
+  /// Raw statements extracted from the `build()` method before the return.
+  final List<String> buildStatements;
 
   /// Optional route metadata from `@JetRoute` annotation.
   final JetRouteMetadata? routeMetadata;
@@ -171,4 +175,21 @@ class ComponentParam {
   final String name;
   final String type;
   final bool isRequired;
+}
+
+/// A node that bridges directly to a third-party Jaspr ecosystem package.
+class EcosystemNode extends WidgetNode {
+  const EcosystemNode({
+    required this.package,
+    required this.code,
+  });
+
+  /// The jaspr ecosystem package required (e.g., 'jaspr_lucide').
+  final String package;
+
+  /// The raw dart code to emit (e.g., 'LucideIcon(LucideIcons.home)').
+  final String code;
+
+  @override
+  String toString() => 'EcosystemNode(' + package + ': ' + code + ')';
 }
