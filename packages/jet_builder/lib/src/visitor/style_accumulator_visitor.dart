@@ -353,11 +353,11 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
       final msArg = _getArgNamed(durationExpr.argumentList, 'milliseconds');
       if (msArg != null) ms = _parseInt(msArg);
     }
-    ms ??= 300;
+    final int finalMs = ms ?? 300;
 
     final tailwindDurations = [75, 100, 150, 200, 300, 500, 700, 1000];
     final closestMs = tailwindDurations
-        .reduce((a, b) => (a - ms!).abs() < (b - ms!).abs() ? a : b);
+        .reduce((a, b) => (a - finalMs).abs() < (b - finalMs).abs() ? a : b);
 
     // Extract curve
     final curveExpr = _getArgNamed(args, 'curve');
