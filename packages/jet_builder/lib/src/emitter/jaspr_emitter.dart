@@ -266,7 +266,9 @@ import 'package:jaspr/jaspr.dart';
 
   void _collectEcosystemPackages(WidgetNode node, Set<String> packages) {
     if (node is EcosystemNode) {
-      packages.add(node.package);
+      if (node.package.isNotEmpty) {
+        packages.add(node.package);
+      }
     } else if (node is StructuralNode) {
       for (final child in node.children) {
         _collectEcosystemPackages(child, packages);

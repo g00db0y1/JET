@@ -94,20 +94,27 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
         superclass == 'ConsumerStatefulWidget';
     final className = node.name.lexeme;
 
-    // Check for @JetRoute annotation
+    // Check for annotations
     JetRouteMetadata? routeMetadata;
+    String? fallbackCode;
     for (final annotation in node.metadata) {
       if (annotation.name.name == 'JetRoute') {
         routeMetadata = _extractJetRouteMetadata(annotation);
+      } else if (annotation.name.name == 'JetFallback') {
+        fallbackCode = _extractJetFallback(annotation);
       }
     }
 
     // Find the build() method to extract the widget tree
     WidgetNode? buildBody;
     List<String> buildStatements = [];
-    for (final member in node.members) {
-      if (member is MethodDeclaration && member.name.lexeme == 'build') {
-        buildBody = _visitBuildMethod(member, buildStatements);
+    if (fallbackCode != null) {
+      buildBody = EcosystemNode(package: '', code: fallbackCode);
+    } else {
+      for (final member in node.members) {
+        if (member is MethodDeclaration && member.name.lexeme == 'build') {
+          buildBody = _visitBuildMethod(member, buildStatements);
+        }
       }
     }
 
@@ -1287,6 +1294,13 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
     final src = styleExpr.toSource();
     final match = RegExp(r'fontSize:\s*(\d+\.?\d*)').firstMatch(src);
     return match != null ? double.parse(match.group(1)!) : null;
+  }
+
+  String? _extractJetFallback(Annotation annotation) {
+    final args = annotation.arguments;
+    if (args == null || args.arguments.isEmpty) return null;
+    final firstArg = args.arguments.first;
+    return _extractStringLiteral(firstArg);
   }
 
   JetRouteMetadata _extractJetRouteMetadata(Annotation annotation) {
