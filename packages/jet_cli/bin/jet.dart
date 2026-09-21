@@ -271,11 +271,75 @@ void _runPoisonSnifferAndPromote(Directory optCacheDir) {
 }
 
 Future<void> _runBuildSingle(String filePath) async {
-  // For now, _runBuildSingle just runs the preview logic but writes to disk.
-  // In the future, this will write to .jet_cache.
+  final entity = File(filePath);
+  if (!entity.existsSync()) {
+    print('[JET] ❌ File not found: $filePath');
+    return;
+  }
+
   print('[JET] 🏗️ Transpiling single file: $filePath');
-  // Temporary implementation using preview logic for output
-  await runPreview(filePath); // We can refactor this to save to disk later
+
+  final rawCacheDir = Directory('.jet_cache/raw');
+  final optCacheDir = Directory('.jet_cache/optimized');
+  final jasprTargetDir = Directory(p.join('..', 'website', 'lib', 'ui'));
+
+  if (!rawCacheDir.existsSync()) rawCacheDir.createSync(recursive: true);
+  if (!optCacheDir.existsSync()) optCacheDir.createSync(recursive: true);
+  if (!jasprTargetDir.existsSync()) jasprTargetDir.createSync(recursive: true);
+
+  final source = entity.readAsStringSync();
+  final parser = FlutterAstParser();
+  final parseResult = parser.parse(source: source, path: filePath);
+
+  if (!parseResult.isUsable) {
+    print('[JET] ❌ Parse failed for $filePath');
+    return;
+  }
+
+  final visitor = StyleAccumulatorVisitor();
+  parseResult.unit!.accept(visitor);
+
+  if (visitor.components.isEmpty) {
+    print('[JET] ⚠️ No transpiled components found in $filePath');
+    return;
+  }
+
+  final emitter = JasprEmitter();
+  final rawJasprCode = emitter.emitFile(
+    components: visitor.components,
+    sourceFile: filePath,
+    version: '0.1.0-dev',
+  );
+
+  final basename = p.basename(filePath);
+  final targetName = basename.replaceFirst('.dart', '.jaspr.dart');
+
+  // Step 1: Raw
+  final rawCacheFile = File(p.join(rawCacheDir.path, targetName));
+  rawCacheFile.writeAsStringSync(rawJasprCode);
+
+  // Step 2: Optimize
+  final optimizer = TailwindOptimizer();
+  final optimizedCode = optimizer.optimize(rawJasprCode);
+
+  final optCacheFile = File(p.join(optCacheDir.path, targetName));
+  optCacheFile.writeAsStringSync(optimizedCode);
+
+  // Step 3: Poison Sniff & Promote
+  final isPoisoned = optimizedCode.contains('import \'dart:io\'') ||
+      optimizedCode.contains('stripe_payment');
+
+  if (isPoisoned) {
+    print(
+        '[JET] ☠️ POISON DETECTED in $targetName. File blocked from promotion.');
+    return;
+  }
+
+  final finalName = targetName.replaceFirst('.jaspr.dart', '.dart');
+  final targetFile = File(p.join(jasprTargetDir.path, finalName));
+  targetFile.writeAsStringSync(optimizedCode);
+
+  print('[JET] ✅ Successfully built and promoted $basename -> $finalName');
 }
 
 Future<void> _runLint() async {

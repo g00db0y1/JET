@@ -4,6 +4,7 @@ import 'package:analyzer/dart/ast/ast.dart';
 import 'package:jet_builder/src/parser/flutter_ast_parser.dart';
 import 'package:jet_builder/src/visitor/style_accumulator_visitor.dart';
 import 'package:jet_builder/src/emitter/jaspr_emitter.dart';
+import 'package:jet_builder/src/optimizer/tailwind_optimizer.dart';
 
 Future<void> runPreview(String filePath, {int? lineNumber}) async {
   final file = File(filePath);
@@ -72,11 +73,14 @@ Future<void> runPreview(String filePath, {int? lineNumber}) async {
     exit(0);
   }
 
-  final jasprCode = emitter.emitFile(
+  final rawJasprCode = emitter.emitFile(
     components: componentsToEmit,
     sourceFile: filePath,
     version: '0.1.0-dev',
   );
+
+  final optimizer = TailwindOptimizer();
+  final jasprCode = optimizer.optimize(rawJasprCode);
 
   stopwatch.stop();
 
