@@ -3,8 +3,12 @@ import 'package:analyzer/dart/ast/visitor.dart';
 
 import '../emitter/tailwind_mapper.dart';
 import 'widget_node.dart';
+import '../linter/sniffer.dart';
+import '../linter/poison_sniffer.dart';
+import '../linter/graphics_sniffer.dart';
+import '../linter/animation_sniffer.dart';
 
-/// Traverses a Flutter widget AST and produces a [WidgetNode] IR tree.
+/// The core JET AST visitor. widget AST and produces a [WidgetNode] IR tree.
 ///
 /// ## How it works
 ///
@@ -27,6 +31,14 @@ import 'widget_node.dart';
 /// final components = visitor.components;
 /// ```
 class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
+  StyleAccumulatorVisitor({SnifferRegistry? snifferRegistry})
+      : snifferRegistry = snifferRegistry ?? (SnifferRegistry()
+          ..register(const PoisonSniffer())
+          ..register(const GraphicsSniffer())
+          ..register(const AnimationSniffer()));
+  
+  final SnifferRegistry? snifferRegistry;
+
   /// All top-level [ComponentNode]s found in the parsed file.
   final List<ComponentNode> components = [];
 
@@ -187,6 +199,11 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
 
   WidgetNode? _dispatchWidgetCreation(
       String typeName, String? constructorName, ArgumentList args) {
+    if (snifferRegistry != null) {
+      final intercepted = snifferRegistry!.interceptWidgetCreation(typeName, constructorName, args);
+      if (intercepted != null) return intercepted;
+    }
+    
     return switch (typeName) {
       // ── Modifier Nodes ──────────────────────────────────────────────────
       'Padding' => _visitPadding(args),
@@ -201,7 +218,6 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
       'AnimatedContainer' => _visitAnimatedWidget(args, 'AnimatedContainer'),
       'AnimatedPadding' => _visitAnimatedWidget(args, 'AnimatedPadding'),
       'AnimatedOpacity' => _visitAnimatedWidget(args, 'AnimatedOpacity'),
-      'CustomPaint' || 'Canvas' || 'RepaintBoundary' || 'Texture' || 'BackdropFilter' => _visitHeavyGraphics(args),
       'AnimatedAlign' => _visitAnimatedWidget(args, 'AnimatedAlign'),
       'AnimatedPositioned' => _visitAnimatedWidget(args, 'AnimatedPositioned'),
 
@@ -917,15 +933,6 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
     return EcosystemNode(
       package: 'jaspr_router',
       code: 'Router$rawCode',
-    );
-  }
-
-  EcosystemNode _visitHeavyGraphics(ArgumentList args) {
-    final rawCode = args.parent?.toSource() ?? '';
-    return EcosystemNode(
-      package: 'jaspr_flutter_embed',
-      code: 'FlutterEmbedView(child: $rawCode)',
-      needsClientAnnotation: true,
     );
   }
 

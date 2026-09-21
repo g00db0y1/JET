@@ -6,7 +6,10 @@ import 'package:dart_style/dart_style.dart';
 import 'package:path/path.dart' as p;
 
 import 'emitter/jaspr_emitter.dart';
+import 'linter/animation_sniffer.dart';
+import 'linter/graphics_sniffer.dart';
 import 'linter/poison_sniffer.dart';
+import 'linter/sniffer.dart';
 import 'optimizer/tailwind_optimizer.dart';
 import 'parser/flutter_ast_parser.dart';
 import 'visitor/style_accumulator_visitor.dart';
@@ -44,7 +47,10 @@ class JetBuilderImpl implements Builder {
   static final _formatter =
       DartFormatter(languageVersion: DartFormatter.latestLanguageVersion);
   static const _parser = FlutterAstParser();
-  static const _sniffer = PoisonSniffer();
+  static final _snifferRegistry = SnifferRegistry()
+    ..register(const PoisonSniffer())
+    ..register(const GraphicsSniffer())
+    ..register(const AnimationSniffer());
   static const _emitter = JasprEmitter();
 
   @override
@@ -92,13 +98,13 @@ class JetBuilderImpl implements Builder {
     final unit = parseResult.unit!;
 
     // Lint (non-fatal)
-    final violations = _sniffer.analyze(unit: unit, filePath: inputPath);
+    final violations = _snifferRegistry.analyzeAll(unit, inputPath);
     if (violations.isNotEmpty) {
       PoisonSniffer.reportViolations(violations);
     }
 
     // Visit
-    final visitor = StyleAccumulatorVisitor();
+    final visitor = StyleAccumulatorVisitor(snifferRegistry: _snifferRegistry);
     unit.accept(visitor);
 
     if (visitor.components.isEmpty) {

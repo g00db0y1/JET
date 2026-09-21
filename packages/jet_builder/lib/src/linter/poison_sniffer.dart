@@ -16,7 +16,9 @@ import 'package:analyzer/dart/ast/visitor.dart';
 /// | P-002 | Navigation Poison | `context.go()` or `Navigator.push()` in transpilable UI |
 /// | P-003 | Platform Plugin | Platform-only packages imported in shared logic |
 /// | P-004 | Heavy setState | `await` or API calls inside `setState()` body |
-class PoisonSniffer {
+import 'sniffer.dart';
+
+class PoisonSniffer extends JetSniffer {
   const PoisonSniffer();
 
   /// Platform-specific packages mapping to their web equivalents or JS interop templates.
@@ -75,10 +77,8 @@ extension type StripeJs._(JSObject _) implements JSObject {
   /// Analyzes a [CompilationUnit] for architectural violations.
   ///
   /// Returns a (possibly empty) list of [LinterViolation]s.
-  List<LinterViolation> analyze({
-    required CompilationUnit unit,
-    required String filePath,
-  }) {
+  @override
+  List<LinterViolation> analyze(CompilationUnit unit, String filePath) {
     final violations = <LinterViolation>[];
     final visitor = _PoisonVisitor(filePath: filePath, violations: violations);
     unit.accept(visitor);
