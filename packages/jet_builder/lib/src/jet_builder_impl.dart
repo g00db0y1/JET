@@ -1,10 +1,13 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:build/build.dart';
 import 'package:dart_style/dart_style.dart';
+import 'package:path/path.dart' as p;
 
 import 'emitter/jaspr_emitter.dart';
 import 'linter/poison_sniffer.dart';
+import 'optimizer/tailwind_optimizer.dart';
 import 'parser/flutter_ast_parser.dart';
 import 'visitor/style_accumulator_visitor.dart';
 
@@ -23,10 +26,14 @@ import 'visitor/style_accumulator_visitor.dart';
 ///       ↓
 /// StyleAccumulatorVisitor → List<ComponentNode>
 ///       ↓
-/// JasprEmitter → Jaspr Dart source string
-///       ↓
-/// DartFormatter → formatted output
-///       ↓
+/// JasprEmitter -> raw Jaspr Dart source string (.jet_cache/raw/)
+///       ->
+/// TailwindOptimizer -> optimized Jaspr Dart source string (.jet_cache/optimized/)
+///       ->
+/// Generated Code Poison Sniffer -> blocks if poisoned
+///       ->
+/// DartFormatter -> formatted output
+///       ->
 /// [Output .jaspr.dart file]
 /// ```
 class JetBuilderImpl implements Builder {
@@ -99,21 +106,53 @@ class JetBuilderImpl implements Builder {
       return;
     }
 
-    // Emit
-    var generated = _emitter.emitFile(
+    // Step 1: Emit Raw (Speed)
+    final rawJasprCode = _emitter.emitFile(
       components: visitor.components,
       sourceFile: inputPath,
     );
 
+    try {
+      final rawCacheDir = Directory('.jet_cache/raw');
+      if (!rawCacheDir.existsSync()) rawCacheDir.createSync(recursive: true);
+      final targetName =
+          p.basename(inputPath).replaceFirst('.dart', '.jaspr.dart');
+      File(p.join(rawCacheDir.path, targetName))
+          .writeAsStringSync(rawJasprCode);
+    } catch (_) {} // Ignore file system errors in build_runner
+
+    // Step 2: Optimize (Accuracy)
+    final optimizer = TailwindOptimizer();
+    final optimizedCode = optimizer.optimize(rawJasprCode);
+
+    try {
+      final optCacheDir = Directory('.jet_cache/optimized');
+      if (!optCacheDir.existsSync()) optCacheDir.createSync(recursive: true);
+      final targetName =
+          p.basename(inputPath).replaceFirst('.dart', '.jaspr.dart');
+      File(p.join(optCacheDir.path, targetName))
+          .writeAsStringSync(optimizedCode);
+    } catch (_) {}
+
+    // Step 3: Poison Sniff (Safety)
+    final isPoisoned = optimizedCode.contains('import \'dart:io\'') ||
+        optimizedCode.contains('stripe_payment');
+
+    if (isPoisoned) {
+      log.severe(
+          '[JET] ☠️ POISON DETECTED in $inputPath. Blocked from emitting.');
+      return;
+    }
+
     // Format
+    var generated = optimizedCode;
     try {
       generated = _formatter.format(generated);
     } catch (e) {
       log.warning('[JET] Could not format generated output for $inputPath: $e');
-      // Use unformatted output rather than failing
     }
 
-    // Write output
+    // Write output (Promotion)
     final outputId = inputId.changeExtension('.jaspr.dart');
     await buildStep.writeAsString(outputId, generated);
 
