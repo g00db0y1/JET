@@ -796,6 +796,26 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
     final ownClasses = <String>[];
 
     if (styleExpr != null) {
+      final src = styleExpr.toSource();
+
+      // Theme inference (M12)
+      if (src.contains('displayLarge') || src.contains('headlineLarge')) {
+        htmlTag = 'h1';
+        ownClasses.add('text-4xl');
+      } else if (src.contains('displayMedium') ||
+          src.contains('headlineMedium')) {
+        htmlTag = 'h2';
+        ownClasses.add('text-3xl');
+      } else if (src.contains('displaySmall') ||
+          src.contains('headlineSmall') ||
+          src.contains('titleLarge')) {
+        htmlTag = 'h3';
+        ownClasses.add('text-2xl');
+      } else if (src.contains('titleMedium')) {
+        htmlTag = 'h4';
+        ownClasses.add('text-xl');
+      }
+
       final fontSize = _extractFontSize(styleExpr);
       if (fontSize != null) {
         final headingTag = TailwindMapper.fontSizeToHeadingTag(fontSize);
@@ -872,7 +892,27 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
 
   EcosystemNode _visitGoRouter(ArgumentList args) {
     var rawCode = args.toSource();
+    
+    // M12: Auto-infer SEO titles from GoRouter routes
+    final goRouteRegex = RegExp(r'GoRoute\s*\((.*?)\s*=>\s*([A-Za-z0-9_]+)\([^)]*\)(.*?)\)', dotAll: true);
+    
+    rawCode = rawCode.replaceAllMapped(goRouteRegex, (match) {
+      final beforeBuilder = match.group(1)!;
+      final widgetName = match.group(2)!;
+      final afterBuilder = match.group(3)!;
+      
+      final fullContent = beforeBuilder + ' => ' + widgetName + '()' + afterBuilder;
+      if (fullContent.contains('title:')) return 'Route(' + fullContent + ')';
+      
+      final title = widgetName
+          .replaceAllMapped(RegExp(r'([A-Z])'), (m) => ' ${m.group(1)}')
+          .trim();
+      return 'Route(title: \'$title\', ' + fullContent + ')';
+    });
+    
+    // Fallback for any GoRoute without a builder matching the exact pattern
     rawCode = rawCode.replaceAll('GoRoute(', 'Route(');
+
     return EcosystemNode(
       package: 'jaspr_router',
       code: 'Router$rawCode',
