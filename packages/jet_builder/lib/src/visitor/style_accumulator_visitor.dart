@@ -201,6 +201,7 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
       'AnimatedContainer' => _visitAnimatedWidget(args, 'AnimatedContainer'),
       'AnimatedPadding' => _visitAnimatedWidget(args, 'AnimatedPadding'),
       'AnimatedOpacity' => _visitAnimatedWidget(args, 'AnimatedOpacity'),
+      'CustomPaint' || 'Canvas' || 'RepaintBoundary' || 'Texture' || 'BackdropFilter' => _visitHeavyGraphics(args),
       'AnimatedAlign' => _visitAnimatedWidget(args, 'AnimatedAlign'),
       'AnimatedPositioned' => _visitAnimatedWidget(args, 'AnimatedPositioned'),
 
@@ -919,6 +920,15 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
     );
   }
 
+  EcosystemNode _visitHeavyGraphics(ArgumentList args) {
+    final rawCode = args.parent?.toSource() ?? '';
+    return EcosystemNode(
+      package: 'jaspr_flutter_embed',
+      code: 'FlutterEmbedView(child: $rawCode)',
+      needsClientAnnotation: true,
+    );
+  }
+
   EcosystemNode _visitIcon(ArgumentList args) {
     final iconExpr = args.arguments.firstOrNull;
     final iconName = iconExpr != null
@@ -1372,6 +1382,7 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
     if (node == null) return false;
     return switch (node) {
       StructuralNode(needsClientAnnotation: true) => true,
+      EcosystemNode(needsClientAnnotation: true) => true,
       StructuralNode(events: final e) when e.isNotEmpty => true,
       StructuralNode(:final children) => children.any(_treeNeedsClient),
       ComponentNode(:final buildBody) => _treeNeedsClient(buildBody),
