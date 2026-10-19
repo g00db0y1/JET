@@ -1,4 +1,5 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
-dart format --set-exit-if-changed .
+dart format --output=none --set-exit-if-changed packages/ tests/jet_builder_test/
+dart analyze --fatal-infos packages/jet_annotations packages/jet_builder packages/jet_cli packages/jet_mcp tests/jet_builder_test

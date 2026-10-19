@@ -11,11 +11,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Setup Dart
       uses: dart-lang/setup-dart@v1
-      
+
     - name: Setup Flutter
       uses: subosito/flutter-action@v2
       with:
@@ -24,35 +24,29 @@ jobs:
     - name: Install Jaspr CLI
       run: dart pub global activate jaspr_cli
 
-    - name: Install Dependencies (jet_builder)
-      run: cd packages/jet_builder && dart pub get
-      
-    - name: Install Dependencies (jet_cli)
-      run: cd packages/jet_cli && dart pub get
+    - name: Install Workspace Dependencies
+      run: dart pub get
 
-    - name: Install Dependencies (Tests)
-      run: cd tests/jet_builder_test && dart pub get
-
-    - name: Run Linter (Analyze)
+    - name: Run Linter (Analyze All Packages & Tests)
       run: |
-        cd packages/jet_builder && dart analyze --fatal-infos
-        cd ../jet_cli && dart analyze --fatal-infos
-        
+        dart analyze --fatal-infos packages/jet_annotations
+        dart analyze --fatal-infos packages/jet_builder
+        dart analyze --fatal-infos packages/jet_cli
+        dart analyze --fatal-infos packages/jet_mcp
+        dart analyze --fatal-infos tests/jet_builder_test
+
     - name: Check Formatting
       run: |
-        cd packages/jet_builder && dart format --output=none --set-exit-if-changed .
-        cd ../jet_cli && dart format --output=none --set-exit-if-changed .
+        dart format --output=none --set-exit-if-changed packages/jet_annotations
+        dart format --output=none --set-exit-if-changed packages/jet_builder
+        dart format --output=none --set-exit-if-changed packages/jet_cli
+        dart format --output=none --set-exit-if-changed packages/jet_mcp
+        dart format --output=none --set-exit-if-changed tests/jet_builder_test
 
-    - name: Run Tests (AST Parser, Optimizer, Code Emitter)
+    - name: Run Tests (AST Parser, Optimizer, Code Emitter, Visual Cross-Check)
       run: cd tests/jet_builder_test && dart test
-      
+
     - name: Dry Run Publish (Check for Pub.dev warnings)
       run: |
         cd packages/jet_builder && dart pub publish --dry-run
         cd ../jet_cli && dart pub publish --dry-run
-        
-    # Future step: The Visual Cross-Checking test will run here
-    # It will use Puppeteer to boot the Flutter App and Jaspr App and diff them.
-    # - name: Run Puppeteer Visual Cross-Check
-    #   run: cd tests/jet_builder_test && dart test test/visual_cross_check_test.dart
-

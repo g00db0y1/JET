@@ -32,11 +32,12 @@ import '../linter/animation_sniffer.dart';
 /// ```
 class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
   StyleAccumulatorVisitor({SnifferRegistry? snifferRegistry})
-      : snifferRegistry = snifferRegistry ?? (SnifferRegistry()
-          ..register(const PoisonSniffer())
-          ..register(const GraphicsSniffer())
-          ..register(const AnimationSniffer()));
-  
+      : snifferRegistry = snifferRegistry ??
+            (SnifferRegistry()
+              ..register(const PoisonSniffer())
+              ..register(const GraphicsSniffer())
+              ..register(const AnimationSniffer()));
+
   final SnifferRegistry? snifferRegistry;
 
   /// All top-level [ComponentNode]s found in the parsed file.
@@ -200,10 +201,11 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
   WidgetNode? _dispatchWidgetCreation(
       String typeName, String? constructorName, ArgumentList args) {
     if (snifferRegistry != null) {
-      final intercepted = snifferRegistry!.interceptWidgetCreation(typeName, constructorName, args);
+      final intercepted = snifferRegistry!
+          .interceptWidgetCreation(typeName, constructorName, args);
       if (intercepted != null) return intercepted;
     }
-    
+
     return switch (typeName) {
       // ── Modifier Nodes ──────────────────────────────────────────────────
       'Padding' => _visitPadding(args),
@@ -909,24 +911,27 @@ class StyleAccumulatorVisitor extends RecursiveAstVisitor<void> {
 
   EcosystemNode _visitGoRouter(ArgumentList args) {
     var rawCode = args.toSource();
-    
+
     // M12: Auto-infer SEO titles from GoRouter routes
-    final goRouteRegex = RegExp(r'GoRoute\s*\((.*?)\s*=>\s*([A-Za-z0-9_]+)\([^)]*\)(.*?)\)', dotAll: true);
-    
+    final goRouteRegex = RegExp(
+        r'GoRoute\s*\((.*?)\s*=>\s*([A-Za-z0-9_]+)\([^)]*\)(.*?)\)',
+        dotAll: true);
+
     rawCode = rawCode.replaceAllMapped(goRouteRegex, (match) {
       final beforeBuilder = match.group(1)!;
       final widgetName = match.group(2)!;
       final afterBuilder = match.group(3)!;
-      
-      final fullContent = beforeBuilder + ' => ' + widgetName + '()' + afterBuilder;
+
+      final fullContent =
+          beforeBuilder + ' => ' + widgetName + '()' + afterBuilder;
       if (fullContent.contains('title:')) return 'Route(' + fullContent + ')';
-      
+
       final title = widgetName
           .replaceAllMapped(RegExp(r'([A-Z])'), (m) => ' ${m.group(1)}')
           .trim();
       return 'Route(title: \'$title\', ' + fullContent + ')';
     });
-    
+
     // Fallback for any GoRoute without a builder matching the exact pattern
     rawCode = rawCode.replaceAll('GoRoute(', 'Route(');
 

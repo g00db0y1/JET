@@ -184,7 +184,7 @@ class EcosystemNode extends WidgetNode {
     required this.code,
     this.needsClientAnnotation = false,
   });
-  
+
   final bool needsClientAnnotation;
 
   /// The jaspr ecosystem package required (e.g., 'jaspr_lucide').

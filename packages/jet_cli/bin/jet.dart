@@ -164,8 +164,7 @@ void main(List<String> args) async {
       await runPreview(restArgs.first, lineNumber: lineNumber);
     case 'lint':
       final restArgs = command.rest;
-      await _runLint(
-          targetPath: restArgs.isNotEmpty ? restArgs.first : null);
+      await _runLint(targetPath: restArgs.isNotEmpty ? restArgs.first : null);
     case 'serve':
       await _runServe();
     case 'clean':
@@ -194,10 +193,9 @@ Future<void> _runInit() async {
   if (gitignoreFile.existsSync()) {
     final gitignoreContent = gitignoreFile.readAsStringSync();
     if (!gitignoreContent.contains('.jet_cache')) {
-      final prefix =
-          gitignoreContent.endsWith('\n') || gitignoreContent.isEmpty
-              ? ''
-              : '\n';
+      final prefix = gitignoreContent.endsWith('\n') || gitignoreContent.isEmpty
+          ? ''
+          : '\n';
       gitignoreFile.writeAsStringSync(
         '$gitignoreContent$prefix# JET staging cache\n.jet_cache/\n',
       );
@@ -586,8 +584,8 @@ Future<void> _runLint({String? targetPath}) async {
         parser.parse(source: file.readAsStringSync(), path: targetPath);
     if (parseResult.isUsable) {
       scannedFiles++;
-      allViolations.addAll(
-          _snifferRegistry.analyzeAll(parseResult.unit!, targetPath));
+      allViolations
+          .addAll(_snifferRegistry.analyzeAll(parseResult.unit!, targetPath));
     }
   } else {
     final libDir = Directory('lib');

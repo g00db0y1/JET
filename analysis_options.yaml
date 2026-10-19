@@ -1,0 +1,7 @@
+analyzer:
+  exclude:
+    - tests/corpus/**
+    - tests/expected/**
+    - "**/.jet_cache/**"
+    - ".jet_cache/**"
+    - "**/*.jaspr.dart"
