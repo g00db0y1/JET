@@ -126,12 +126,13 @@ class _PoisonVisitor extends RecursiveAstVisitor<void> {
   final String filePath;
   final List<LinterViolation> violations;
 
-  // Whether this file is in a "logic" location (not ui/widgets/screens)
+  // Whether this file is in a "logic" location (not ui/widgets/screens/corpus)
   bool get _isLogicFile {
-    final lower = filePath.toLowerCase();
+    final lower = filePath.replaceAll('\\', '/').toLowerCase();
     return !lower.contains('/ui/') &&
         !lower.contains('/widgets/') &&
-        !lower.contains('/screens/');
+        !lower.contains('/screens/') &&
+        !lower.contains('/corpus/');
   }
 
   // ───────────────────────────────────────────────────────────────────────────

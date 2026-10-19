@@ -16,7 +16,7 @@ void main() {
       {String path = 'lib/state/controller.dart'}) {
     final result = parser.parse(source: source, path: path);
     if (!result.isUsable) return [];
-    return sniffer.analyze(unit: result.unit!, filePath: path);
+    return sniffer.analyze(result.unit!, path);
   }
 
   // ─────────────────────────────────────────────────────────────────────────────

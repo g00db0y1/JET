@@ -154,7 +154,7 @@ void _handleAnalyze(dynamic id, String? filePath) {
   }
 
   const sniffer = PoisonSniffer();
-  final violations = sniffer.analyze(unit: result.unit!, filePath: filePath);
+  final violations = sniffer.analyze(result.unit!, filePath);
 
   if (violations.isEmpty) {
     _sendToolResult(id,

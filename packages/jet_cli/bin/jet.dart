@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:args/args.dart';
@@ -9,21 +10,65 @@ import 'package:jet_builder/src/parser/flutter_ast_parser.dart';
 import 'package:jet_builder/src/visitor/style_accumulator_visitor.dart';
 import 'package:jet_builder/src/emitter/jaspr_emitter.dart';
 import 'package:jet_builder/src/optimizer/tailwind_optimizer.dart';
+import 'package:jet_builder/src/linter/sniffer.dart';
+import 'package:jet_builder/src/linter/poison_sniffer.dart';
+import 'package:jet_builder/src/linter/graphics_sniffer.dart';
+import 'package:jet_builder/src/linter/animation_sniffer.dart';
 
-/// JET CLI — Developer convenience tool for the JET transpiler.
+/// Shared Sniffer Fleet registry used by the CLI pipeline.
+final SnifferRegistry _snifferRegistry = SnifferRegistry()
+  ..register(const PoisonSniffer())
+  ..register(const GraphicsSniffer())
+  ..register(const AnimationSniffer());
+
+/// JET CLI — Unified developer entrypoint for the JET transpiler.
 ///
 /// Usage:
-///   jet init           — Add jet_annotations + jet_builder to pubspec.yaml
-///   jet build          — Run the transpiler (entire project via build_runner)
-///   jet build <file>   — Instantly transpile a single file
-///   jet preview <file> — Instantly print transpiled Jaspr code to the terminal
-///   jet lint           — Run only the JET linter (no code generation)
-///   jet serve          — Build then run jaspr serve
-///   jet clean          — Delete generated .jaspr.dart files
+///   jet init                   — Set up JET in a Flutter project
+///   jet build                  — Transpile entire project via 3-step pipeline
+///   jet build --watch (-w)     — Continuous generation on file changes
+///   jet build -t <file>        — Instantly transpile a single target file
+///   jet preview <file>         — Print transpiled Jaspr code to the terminal
+///   jet lint                   — Run the Sniffer Fleet architectural linter
+///   jet serve                  — Build then run jaspr serve
+///   jet clean                  — Delete .jet_cache and generated .jaspr.dart files
 void main(List<String> args) async {
+  final buildParser = ArgParser()
+    ..addOption(
+      'target',
+      abbr: 't',
+      help: 'Target a single Dart file for instant transpilation.',
+    )
+    ..addFlag(
+      'watch',
+      abbr: 'w',
+      negatable: false,
+      help: 'Continuously watch for file changes and re-transpile.',
+    )
+    ..addOption(
+      'output',
+      abbr: 'o',
+      defaultsTo: p.join('..', 'website', 'lib', 'ui'),
+      help: 'Target output directory for promoted Jaspr components.',
+    );
+
+  final watchParser = ArgParser()
+    ..addOption(
+      'target',
+      abbr: 't',
+      help: 'Target a single Dart file to watch and transpile.',
+    )
+    ..addOption(
+      'output',
+      abbr: 'o',
+      defaultsTo: p.join('..', 'website', 'lib', 'ui'),
+      help: 'Target output directory for promoted Jaspr components.',
+    );
+
   final parser = ArgParser()
     ..addCommand('init')
-    ..addCommand('build')
+    ..addCommand('build', buildParser)
+    ..addCommand('watch', watchParser)
     ..addCommand(
       'preview',
       ArgParser()
@@ -37,9 +82,16 @@ void main(List<String> args) async {
     ..addFlag('version',
         abbr: 'v', negatable: false, help: 'Show JET version.');
 
-  final results = parser.parse(args);
+  late final ArgResults results;
+  try {
+    results = parser.parse(args);
+  } on FormatException catch (e) {
+    print('[JET] ❌ ${e.message}\n');
+    _printUsage(parser);
+    exit(1);
+  }
 
-  if (results['help'] as bool || results.command == null) {
+  if (results['help'] as bool) {
     _printUsage(parser);
     exit(0);
   }
@@ -49,17 +101,47 @@ void main(List<String> args) async {
     exit(0);
   }
 
+  if (results.command == null) {
+    _printUsage(parser);
+    exit(0);
+  }
+
   final command = results.command!;
   switch (command.name) {
     case 'init':
       await _runInit();
     case 'build':
+      final targetOption = command['target'] as String?;
       final restArgs = command.rest;
-      if (restArgs.isNotEmpty) {
-        // Run single file build (save to disk)
-        await _runBuildSingle(restArgs.first);
+      final targetFile =
+          targetOption ?? (restArgs.isNotEmpty ? restArgs.first : null);
+      final watch = command['watch'] as bool;
+      final outputDir = command['output'] as String;
+
+      if (targetFile != null) {
+        await _runBuildSingle(targetFile, outputDirPath: outputDir);
+        if (watch) {
+          await _runWatchSingle(targetFile, outputDirPath: outputDir);
+        }
       } else {
-        await _runBuildAll();
+        await _runBuildAll(outputDirPath: outputDir);
+        if (watch) {
+          await _runWatchAll(outputDirPath: outputDir);
+        }
+      }
+    case 'watch':
+      final targetOption = command['target'] as String?;
+      final restArgs = command.rest;
+      final targetFile =
+          targetOption ?? (restArgs.isNotEmpty ? restArgs.first : null);
+      final outputDir = command['output'] as String;
+
+      if (targetFile != null) {
+        await _runBuildSingle(targetFile, outputDirPath: outputDir);
+        await _runWatchSingle(targetFile, outputDirPath: outputDir);
+      } else {
+        await _runBuildAll(outputDirPath: outputDir);
+        await _runWatchAll(outputDirPath: outputDir);
       }
     case 'preview':
       final restArgs = command.rest;
@@ -81,7 +163,9 @@ void main(List<String> args) async {
 
       await runPreview(restArgs.first, lineNumber: lineNumber);
     case 'lint':
-      await _runLint();
+      final restArgs = command.rest;
+      await _runLint(
+          targetPath: restArgs.isNotEmpty ? restArgs.first : null);
     case 'serve':
       await _runServe();
     case 'clean':
@@ -105,6 +189,25 @@ Future<void> _runInit() async {
     exit(1);
   }
 
+  // Ensure .jet_cache/ is added to .gitignore
+  final gitignoreFile = File('.gitignore');
+  if (gitignoreFile.existsSync()) {
+    final gitignoreContent = gitignoreFile.readAsStringSync();
+    if (!gitignoreContent.contains('.jet_cache')) {
+      final prefix =
+          gitignoreContent.endsWith('\n') || gitignoreContent.isEmpty
+              ? ''
+              : '\n';
+      gitignoreFile.writeAsStringSync(
+        '$gitignoreContent$prefix# JET staging cache\n.jet_cache/\n',
+      );
+      print('[JET] 📝 Added .jet_cache/ to .gitignore.');
+    }
+  } else {
+    gitignoreFile.writeAsStringSync('# JET staging cache\n.jet_cache/\n');
+    print('[JET] 📝 Created .gitignore with .jet_cache/.');
+  }
+
   final content = pubspecFile.readAsStringSync();
 
   if (content.contains('jet_annotations')) {
@@ -112,7 +215,6 @@ Future<void> _runInit() async {
     exit(0);
   }
 
-  // Instructions instead of auto-editing (safe for any pubspec format)
   print('''
 [JET] Add the following to your pubspec.yaml:
 
@@ -121,18 +223,25 @@ Future<void> _runInit() async {
 
   dev_dependencies:
     jet_builder: ^0.1.0
-    build_runner: ^2.4.0
 
 Then run: dart pub get
-Then run: jet build
+Then run:
+  jet build                      # Transpile entire project
+  jet build --watch              # Continuous generation on file save
+  jet build -t lib/ui/home.dart  # Single-file transpilation
 ''');
 }
 
-Future<void> _runBuildAll() async {
+const List<String> _defaultSourceDirs = [
+  'lib/ui',
+  'lib/screens',
+  'lib/widgets',
+];
+
+Future<void> _runBuildAll({String? outputDirPath}) async {
   print('[JET] 🚀 Starting 3-Step Disk-Backed Compiler Pipeline...');
   final stopwatch = Stopwatch()..start();
 
-  final sourceDirs = ['lib/ui', 'lib/screens', 'lib/widgets'];
   final rawCacheDir = Directory(p.join('.jet_cache', 'raw'));
   final optCacheDir = Directory(p.join('.jet_cache', 'optimized'));
 
@@ -147,7 +256,7 @@ Future<void> _runBuildAll() async {
   // Parses Flutter AST and writes unoptimized code to .jet_cache/raw/
   // =========================================================================
   print('[JET] ⚡ STEP 1: Generating Raw AST (Speed)...');
-  for (final dirPath in sourceDirs) {
+  for (final dirPath in _defaultSourceDirs) {
     final dir = Directory(dirPath);
     if (!dir.existsSync()) continue;
 
@@ -161,13 +270,19 @@ Future<void> _runBuildAll() async {
 
         if (!parseResult.isUsable) continue;
 
-        final visitor = StyleAccumulatorVisitor();
-        parseResult.unit!.accept(visitor);
+        final unit = parseResult.unit!;
+        final violations = _snifferRegistry.analyzeAll(unit, entity.path);
+        if (violations.isNotEmpty) {
+          PoisonSniffer.reportViolations(violations);
+        }
+
+        final visitor =
+            StyleAccumulatorVisitor(snifferRegistry: _snifferRegistry);
+        unit.accept(visitor);
 
         if (visitor.components.isEmpty) continue;
 
         final emitter = JasprEmitter();
-        // Currently, JasprEmitter emits string. In the future, this will emit the IR.
         final rawJasprCode = emitter.emitFile(
           components: visitor.components,
           sourceFile: entity.path,
@@ -215,7 +330,10 @@ Future<void> _runBuildAll() async {
   // STEP 3: Poison Sniffer & Promotion (Safety)
   // Reads from .jet_cache/optimized/, verifies it, and promotes to target
   // =========================================================================
-  _runPoisonSnifferAndPromote(optCacheDir);
+  _runPoisonSnifferAndPromote(
+    optCacheDir,
+    outputDirPath: outputDirPath,
+  );
 
   stopwatch.stop();
   print(
@@ -224,11 +342,14 @@ Future<void> _runBuildAll() async {
       '[JET] 📂 Transpiled $componentCount components across $fileCount files.');
 }
 
-void _runPoisonSnifferAndPromote(Directory optCacheDir) {
+void _runPoisonSnifferAndPromote(
+  Directory optCacheDir, {
+  String? outputDirPath,
+}) {
   print('[JET] 🛡️ STEP 3: Running Poison Sniffer & Promoting to Targets...');
 
-  // Target environment (would normally be in jet.yaml)
-  final jasprTargetDir = Directory(p.join('..', 'website', 'lib', 'ui'));
+  final jasprTargetDir =
+      Directory(outputDirPath ?? p.join('..', 'website', 'lib', 'ui'));
 
   int promotedCount = 0;
   int poisonedCount = 0;
@@ -240,7 +361,6 @@ void _runPoisonSnifferAndPromote(Directory optCacheDir) {
     if (filename.endsWith('.jaspr.dart')) {
       final optimizedCode = entity.readAsStringSync();
 
-      // Simple Poison Sniffing on the generated file:
       // Prevent mobile-only plugins from reaching the web target.
       final isPoisoned = optimizedCode.contains('import \'dart:io\'') ||
           optimizedCode.contains('stripe_payment');
@@ -270,18 +390,23 @@ void _runPoisonSnifferAndPromote(Directory optCacheDir) {
   }
 }
 
-Future<void> _runBuildSingle(String filePath) async {
+Future<void> _runBuildSingle(
+  String filePath, {
+  String? outputDirPath,
+}) async {
   final entity = File(filePath);
   if (!entity.existsSync()) {
     print('[JET] ❌ File not found: $filePath');
     return;
   }
 
-  print('[JET] 🏗️ Transpiling single file: $filePath');
+  final stopwatch = Stopwatch()..start();
+  print('[JET] 🎯 Single-file transpilation target: $filePath');
 
-  final rawCacheDir = Directory('.jet_cache/raw');
-  final optCacheDir = Directory('.jet_cache/optimized');
-  final jasprTargetDir = Directory(p.join('..', 'website', 'lib', 'ui'));
+  final rawCacheDir = Directory(p.join('.jet_cache', 'raw'));
+  final optCacheDir = Directory(p.join('.jet_cache', 'optimized'));
+  final jasprTargetDir =
+      Directory(outputDirPath ?? p.join('..', 'website', 'lib', 'ui'));
 
   if (!rawCacheDir.existsSync()) rawCacheDir.createSync(recursive: true);
   if (!optCacheDir.existsSync()) optCacheDir.createSync(recursive: true);
@@ -296,8 +421,14 @@ Future<void> _runBuildSingle(String filePath) async {
     return;
   }
 
-  final visitor = StyleAccumulatorVisitor();
-  parseResult.unit!.accept(visitor);
+  final unit = parseResult.unit!;
+  final violations = _snifferRegistry.analyzeAll(unit, filePath);
+  if (violations.isNotEmpty) {
+    PoisonSniffer.reportViolations(violations);
+  }
+
+  final visitor = StyleAccumulatorVisitor(snifferRegistry: _snifferRegistry);
+  unit.accept(visitor);
 
   if (visitor.components.isEmpty) {
     print('[JET] ⚠️ No transpiled components found in $filePath');
@@ -339,19 +470,158 @@ Future<void> _runBuildSingle(String filePath) async {
   final targetFile = File(p.join(jasprTargetDir.path, finalName));
   targetFile.writeAsStringSync(optimizedCode);
 
-  print('[JET] ✅ Successfully built and promoted $basename -> $finalName');
+  stopwatch.stop();
+  print(
+      '[JET] ✅ Built & promoted $basename -> ${targetFile.path} (${stopwatch.elapsedMilliseconds}ms)');
 }
 
-Future<void> _runLint() async {
-  print('[JET] Running JET linter only...');
-  final result = await run(
-    'dart run build_runner build --delete-conflicting-outputs --define=jet_builder:jet_builder=lint_only=true',
-    verbose: true,
-  );
-  if (result.first.exitCode != 0) {
-    print('[JET] Lint complete with violations (see above).');
+/// Continuously watches the project UI directories and runs single-file
+/// transpilation whenever a `.dart` source file is created or modified.
+Future<void> _runWatchAll({String? outputDirPath}) async {
+  final existingDirs = _defaultSourceDirs
+      .map(Directory.new)
+      .where((d) => d.existsSync())
+      .toList();
+
+  if (existingDirs.isEmpty) {
+    print(
+        '[JET] ⚠️ No source directories (lib/ui, lib/screens, lib/widgets) found to watch.');
+    return;
+  }
+
+  print(
+      '\n[JET] 👀 Continuous generation active — watching ${existingDirs.map((d) => d.path).join(', ')} (Press Ctrl+C to stop)...');
+
+  final debounceTimers = <String, Timer>{};
+  final subscriptions = <StreamSubscription<FileSystemEvent>>[];
+
+  for (final dir in existingDirs) {
+    final sub = dir.watch(recursive: true).listen((event) {
+      final path = event.path;
+      if (!path.endsWith('.dart') || path.endsWith('.jaspr.dart')) return;
+
+      debounceTimers[path]?.cancel();
+      debounceTimers[path] = Timer(const Duration(milliseconds: 150), () async {
+        if (event is FileSystemDeleteEvent || !File(path).existsSync()) {
+          _handleDeletedFile(path, outputDirPath: outputDirPath);
+          return;
+        }
+        print('\n[JET] 🔄 Change detected in ${p.relative(path)}');
+        await _runBuildSingle(path, outputDirPath: outputDirPath);
+      });
+    });
+    subscriptions.add(sub);
+  }
+
+  // Keep process alive until SIGINT
+  await ProcessSignal.sigint.watch().first;
+  print('\n[JET] 🛑 Stopping continuous generation watcher...');
+  for (final timer in debounceTimers.values) {
+    timer.cancel();
+  }
+  for (final sub in subscriptions) {
+    await sub.cancel();
+  }
+}
+
+/// Continuously watches a single target `.dart` file and re-transpiles on save.
+Future<void> _runWatchSingle(
+  String filePath, {
+  String? outputDirPath,
+}) async {
+  final file = File(filePath);
+  if (!file.existsSync()) {
+    print('[JET] ❌ Cannot watch non-existent file: $filePath');
+    return;
+  }
+
+  final normalizedTarget = p.normalize(file.absolute.path);
+  print(
+      '\n[JET] 👀 Watching single target file: $filePath (Press Ctrl+C to stop)...');
+
+  Timer? debounceTimer;
+  final sub = file.parent.watch().listen((event) {
+    final eventAbsPath = p.normalize(File(event.path).absolute.path);
+    if (eventAbsPath != normalizedTarget) return;
+
+    debounceTimer?.cancel();
+    debounceTimer = Timer(const Duration(milliseconds: 150), () async {
+      if (!file.existsSync()) return;
+      print('\n[JET] 🔄 Change detected in $filePath');
+      await _runBuildSingle(filePath, outputDirPath: outputDirPath);
+    });
+  });
+
+  await ProcessSignal.sigint.watch().first;
+  print('\n[JET] 🛑 Stopping single-file watcher...');
+  debounceTimer?.cancel();
+  await sub.cancel();
+}
+
+void _handleDeletedFile(String filePath, {String? outputDirPath}) {
+  final basename = p.basename(filePath);
+  final cacheName = basename.replaceFirst('.dart', '.jaspr.dart');
+  final rawCacheFile = File(p.join('.jet_cache', 'raw', cacheName));
+  final optCacheFile = File(p.join('.jet_cache', 'optimized', cacheName));
+
+  if (rawCacheFile.existsSync()) rawCacheFile.deleteSync();
+  if (optCacheFile.existsSync()) optCacheFile.deleteSync();
+
+  print('[JET] 🗑️  Cleaned cached artifacts for deleted file: $basename');
+}
+
+Future<void> _runLint({String? targetPath}) async {
+  print('[JET] 🔍 Running JET Sniffer Fleet architectural linter...');
+  final parser = FlutterAstParser();
+  final allViolations = <LinterViolation>[];
+  int scannedFiles = 0;
+
+  if (targetPath != null) {
+    final file = File(targetPath);
+    if (!file.existsSync()) {
+      print('[JET] ❌ File not found: $targetPath');
+      exit(1);
+    }
+    final parseResult =
+        parser.parse(source: file.readAsStringSync(), path: targetPath);
+    if (parseResult.isUsable) {
+      scannedFiles++;
+      allViolations.addAll(
+          _snifferRegistry.analyzeAll(parseResult.unit!, targetPath));
+    }
   } else {
-    print('[JET] ✅ No violations found.');
+    final libDir = Directory('lib');
+    if (!libDir.existsSync()) {
+      print('[JET] ⚠️ No lib/ directory found in current directory.');
+      return;
+    }
+
+    for (final entity in libDir.listSync(recursive: true)) {
+      if (entity is File &&
+          entity.path.endsWith('.dart') &&
+          !entity.path.endsWith('.jaspr.dart')) {
+        final parseResult = parser.parse(
+          source: entity.readAsStringSync(),
+          path: entity.path.replaceAll('\\', '/'),
+        );
+        if (parseResult.isUsable) {
+          scannedFiles++;
+          allViolations.addAll(_snifferRegistry.analyzeAll(
+            parseResult.unit!,
+            entity.path.replaceAll('\\', '/'),
+          ));
+        }
+      }
+    }
+  }
+
+  if (allViolations.isNotEmpty) {
+    PoisonSniffer.reportViolations(allViolations);
+    print(
+        '[JET] ⚠️ Lint complete: ${allViolations.length} violation(s) across $scannedFiles file(s).');
+    exitCode = 1;
+  } else {
+    print('[JET] ✅ No violations found ($scannedFiles file(s) scanned).');
   }
 }
 
@@ -363,8 +633,15 @@ Future<void> _runServe() async {
 }
 
 Future<void> _runClean() async {
-  print('[JET] Cleaning generated .jaspr.dart files...');
+  print('[JET] Cleaning .jet_cache and generated .jaspr.dart files...');
   var count = 0;
+
+  final cacheDir = Directory('.jet_cache');
+  if (cacheDir.existsSync()) {
+    await cacheDir.delete(recursive: true);
+    print('[JET] Deleted .jet_cache/');
+  }
+
   await for (final entity in Directory.current.list(recursive: true)) {
     if (entity is File && entity.path.endsWith('.jaspr.dart')) {
       print('[JET] Deleting ${p.relative(entity.path)}');
@@ -372,7 +649,7 @@ Future<void> _runClean() async {
       count++;
     }
   }
-  print('[JET] ✅ Deleted $count generated file(s).');
+  print('[JET] ✅ Cleaned cache and deleted $count generated file(s).');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -381,23 +658,35 @@ Future<void> _runClean() async {
 
 void _printUsage(ArgParser parser) {
   print('''
-JET — Flutter to Jaspr transpiler CLI
+JET — Flutter to Jaspr Transpiler CLI
 
 Usage: jet <command> [options]
 
 Commands:
-  init    Add JET packages to your project's pubspec.yaml
-  build   Run the JET transpiler (dart run build_runner build)
-  lint    Run only the JET architectural linter
-  serve   Build and serve the Jaspr web app
-  clean   Delete all generated .jaspr.dart files
+  init      Set up JET in a Flutter project
+  build     Run the JET transpiler (full project, single file, or continuous watch)
+  watch     Continuously watch and transpile Flutter UI files
+  preview   Print transpiled Jaspr code directly to the terminal
+  lint      Run the JET Sniffer Fleet architectural linter
+  serve     Build and serve the Jaspr web app
+  clean     Delete .jet_cache and all generated .jaspr.dart files
+
+Build Options (jet build):
+  -t, --target <file>    Transpile a single target file (or pass <file> positionally)
+  -w, --watch            Continuously watch for file changes and re-transpile
+  -o, --output <dir>     Target directory for promoted Jaspr files (default: ../website/lib/ui)
 
 ${parser.usage}
 
 Examples:
-  jet init          # Set up JET in a Flutter project
-  jet build         # Generate Jaspr components from Flutter UI
-  jet lint          # Check for architectural violations only
-  jet clean         # Remove all generated files
+  jet init                           # Set up JET in a Flutter project
+  jet build                          # Transpile entire project once
+  jet build --watch                  # Continuous generation on file save
+  jet build -t lib/ui/home.dart      # Single-file transpilation via -t flag
+  jet build lib/ui/home.dart         # Single-file transpilation (positional)
+  jet build -w -t lib/ui/home.dart   # Watch and auto-transpile a single file
+  jet preview lib/ui/home.dart       # Preview generated Jaspr output in terminal
+  jet lint                           # Check for architectural violations
+  jet clean                          # Remove cache and generated files
 ''');
 }
